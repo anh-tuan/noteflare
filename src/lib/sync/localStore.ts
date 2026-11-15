@@ -6,7 +6,7 @@
  * If IndexedDB isn't available (some private modes), every call degrades to a
  * no-op and NoteFlare simply runs online-only.
  */
-import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
+import { deleteDB, openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import type { EncryptedNote, PutNoteBody, VaultRecord } from '../../../shared/types'
 
 export type OutboxEntry =
@@ -45,6 +45,8 @@ export interface LocalStore {
   putOutbox(e: OutboxEntry): Promise<void>
   deleteOutbox(id: string): Promise<void>
   clear(): Promise<void>
+  /** Empty the cache, close it and delete the database. Later calls are no-ops. */
+  destroy(): Promise<void>
 }
 
 export function createLocalStore(name = 'noteflare'): LocalStore {
@@ -59,6 +61,10 @@ export function createLocalStore(name = 'noteflare'): LocalStore {
             d.createObjectStore('notes', { keyPath: 'id' })
             d.createObjectStore('outbox', { keyPath: 'id' })
             d.createObjectStore('kv')
+          },
+          // Another tab is deleting the database (sign-out): let go so it can.
+          blocking(_cur, _next, event) {
+            ;(event.target as IDBDatabase).close()
           },
         })
       } catch {
@@ -78,7 +84,7 @@ export function createLocalStore(name = 'noteflare'): LocalStore {
     }
   }
 
-  return {
+  const store: LocalStore = {
     getMeta: () => run(null, async (d) => ((await d.get('kv', 'meta')) as Meta | undefined) ?? null),
     setMeta: (patch) =>
       run(undefined, async (d) => {
@@ -115,7 +121,17 @@ export function createLocalStore(name = 'noteflare'): LocalStore {
           tx.done,
         ])
       }),
+    async destroy() {
+      // Empty first: deleting can stay blocked by a tab that doesn't let go.
+      await store.clear()
+      const d = await db()
+      dbp = Promise.resolve(null)
+      d?.close()
+      if (typeof indexedDB === 'undefined') return
+      await Promise.race([deleteDB(name).catch(() => {}), new Promise((r) => setTimeout(r, 2000))])
+    },
   }
+  return store
 }
 
 /** The app-wide store. */

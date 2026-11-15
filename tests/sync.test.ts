@@ -330,3 +330,25 @@ describe('offline-first sync', () => {
     expect(e.getSnapshot().status.pending).toBe(0)
   })
 })
+
+describe('sign-out wipe', () => {
+  it('deletes the device cache: notes, unsynced changes and vault keys', async () => {
+    const name = `wipe-${++dbCount}`
+    const local = createLocalStore(name)
+    await local.setMeta({ email: 'a@example.com', hasVault: true })
+    await local.putOutbox({ id: 'n1', kind: 'delete', seq: 1 })
+    await local.putNotes([{ id: 'n1', ciphertext: 'x', iv: 'y', pinned: false, archived: false, trashedAt: null, position: 0, version: 1, updatedAt: 1 } as EncryptedNote])
+
+    await local.destroy()
+
+    // Writes after the wipe are dropped, not stored again.
+    await local.putOutbox({ id: 'n2', kind: 'delete', seq: 2 })
+    expect(await local.allOutbox()).toEqual([])
+    expect((await indexedDB.databases()).map((d) => d.name)).not.toContain(name)
+
+    const reopened = createLocalStore(name)
+    expect(await reopened.getMeta()).toBeNull()
+    expect(await reopened.allNotes()).toEqual([])
+    expect(await reopened.allOutbox()).toEqual([])
+  })
+})

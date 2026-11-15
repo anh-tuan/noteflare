@@ -7,6 +7,34 @@ import { transition } from './motion'
 import { createVault, rewrapVault, unlockWithPassphrase, unlockWithRecovery } from './crypto'
 
 const IDLE_LOCK_MS = 15 * 60 * 1000
+const SIGN_OUT_CHANNEL = 'noteflare:sign-out'
+
+/**
+ * Remove everything NoteFlare keeps on this device: the encrypted notes, the
+ * unsynced changes and the wrapped keys (IndexedDB), settings (localStorage),
+ * the saved app (Cache Storage and the service worker). Other open tabs are told
+ * to sign out. Each step is best-effort so sign-out always finishes.
+ */
+async function wipeDevice() {
+  const steps: Promise<unknown>[] = [localStore.destroy()]
+  try {
+    const channel = new BroadcastChannel(SIGN_OUT_CHANNEL)
+    channel.postMessage('sign-out')
+    channel.close()
+  } catch {
+    /* no BroadcastChannel */
+  }
+  try {
+    localStorage.clear()
+    sessionStorage.clear()
+  } catch {
+    /* storage blocked */
+  }
+  if ('caches' in self) steps.push(caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))))
+  if ('serviceWorker' in navigator)
+    steps.push(navigator.serviceWorker.getRegistrations().then((regs) => Promise.all(regs.map((r) => r.unregister()))))
+  await Promise.allSettled(steps)
+}
 
 type Status = 'loading' | 'unauthorized' | 'access-missing' | 'error' | 'offline-empty' | 'setup' | 'locked' | 'unlocked'
 
@@ -26,7 +54,7 @@ interface VaultState {
   recover(code: string, newPassphrase: string): Promise<void>
   changePassphrase(current: string, next: string): Promise<void>
   lock(): void
-  /** Sign out of Cloudflare Access and remove the copy stored on this device. */
+  /** Sign out of Cloudflare Access and remove everything NoteFlare stored on this device. */
   signOut(): Promise<void>
 }
 
@@ -160,10 +188,25 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     [saveRewrap],
   )
 
+  // Another tab signed out: drop the key and leave too.
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return
+    const channel = new BroadcastChannel(SIGN_OUT_CHANNEL)
+    channel.onmessage = () => {
+      setDek(null)
+      pendingDek.current = null
+      record.current = null
+      location.replace('/cdn-cgi/access/logout')
+    }
+    return () => channel.close()
+  }, [])
+
   const signOut = useCallback(async () => {
     setDek(null)
-    await localStore.clear()
-    location.href = '/cdn-cgi/access/logout'
+    pendingDek.current = null
+    record.current = null
+    await wipeDevice()
+    location.replace('/cdn-cgi/access/logout')
   }, [])
 
   return (
