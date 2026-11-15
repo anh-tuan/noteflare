@@ -8,6 +8,7 @@ All notable changes to NoteFlare are recorded here. The format follows [Keep a C
 
 - Portuguese (Brazil) interface.
 - Deploy with an AI coding agent: paste the prompt from the README into Claude Code, Codex or a similar tool.
+- Let Claude, Cursor and other AI tools read and write your notes through the CLI's MCP server; notes are decrypted on your computer.
 
 ## [0.3.0] - 2026-11-15
 

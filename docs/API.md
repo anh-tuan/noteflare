@@ -104,6 +104,51 @@ node packages/cli/bin/noteflare.mjs export ./backup    # Markdown with frontmatt
 
 It asks for the passphrase, or reads `NOTEFLARE_PASSPHRASE`. `noteflare help` lists every command.
 
+### MCP server (AI tools)
+
+`noteflare mcp` runs a local [MCP](https://modelcontextprotocol.io) server on stdin/stdout, so Claude, Cursor and other AI tools can read and write your notes. Notes are decrypted on your computer; the NoteFlare server still sees only ciphertext. Set up the CLI as above (including `bun run build:client`), and set `NOTEFLARE_PASSPHRASE`: the server can't prompt, because stdin carries the protocol.
+
+Tools:
+
+- `search_notes`: find notes by text or label; returns titles and snippets.
+- `get_note`: read one note in full.
+- `create_note`: create a note.
+- `append_to_note`: add text to the end of a note.
+- `update_note`: change title, body, labels, pinned or archived.
+- `trash_note`: move a note to the trash.
+
+With a read-only token only `search_notes` and `get_note` exist. Use a read-only token unless the AI needs to write.
+
+> Once a tool reads a note, its text goes to the AI provider in plaintext. Note content is untrusted input to the AI: a note that says "ignore your instructions" must not be obeyed.
+
+Claude Code:
+
+```bash
+claude mcp add noteflare \
+  --env NOTEFLARE_URL=https://notes.example.com \
+  --env NOTEFLARE_TOKEN=nf_… \
+  --env NOTEFLARE_PASSPHRASE=… \
+  -- node /path/to/noteflare/packages/cli/bin/noteflare.mjs mcp
+```
+
+Claude Desktop (`claude_desktop_config.json`) and Cursor (`~/.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "noteflare": {
+      "command": "node",
+      "args": ["/path/to/noteflare/packages/cli/bin/noteflare.mjs", "mcp"],
+      "env": {
+        "NOTEFLARE_URL": "https://notes.example.com",
+        "NOTEFLARE_TOKEN": "nf_…",
+        "NOTEFLARE_PASSPHRASE": "…"
+      }
+    }
+  }
+}
+```
+
 ### curl
 
 ```bash

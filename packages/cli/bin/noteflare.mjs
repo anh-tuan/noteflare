@@ -10,6 +10,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createInterface } from 'node:readline'
+import { createRequire } from 'node:module'
 import { NoteFlareClient, NoteFlareError, WrongSecretError } from '../../client/dist/index.js'
 
 const HELP = `noteflare — end-to-end encrypted notes from the terminal
@@ -23,6 +24,7 @@ Usage
   noteflare trash <note>                           Move a note to the trash
   noteflare export <dir>                           Write every note to <dir> as Markdown
   noteflare whoami                                 Show the account and token access
+  noteflare mcp                                    Run an MCP server on stdin/stdout for AI tools
 
 <note> is an id, an id prefix, or the start of a title.
 
@@ -75,6 +77,17 @@ async function main() {
   if (command === 'whoami') {
     const me = await nf.me()
     return console.log(`${me.email} · ${me.scope === 'write' ? 'read & write' : 'read only'} token`)
+  }
+
+  if (command === 'mcp') {
+    const passphrase = process.env.NOTEFLARE_PASSPHRASE
+    if (!passphrase) fail('Set NOTEFLARE_PASSPHRASE: the MCP server reads stdin for the protocol.')
+    const me = await nf.me()
+    await nf.unlock(passphrase)
+    const { createTools, createServer, serveStdio } = await import('../lib/mcp.mjs')
+    const { version } = createRequire(import.meta.url)('../package.json')
+    const server = createServer(createTools(nf, { canWrite: me.scope === 'write' }), { name: 'noteflare', version })
+    return serveStdio(server)
   }
 
   await nf.unlock(process.env.NOTEFLARE_PASSPHRASE ?? (await askHidden('Passphrase: ')))
