@@ -39,6 +39,7 @@ A simple, private, serverless notes app — end-to-end encrypted, completely fre
 - ✨ **Decrypt-in-place unlock**: watch every note resolve from ciphertext the moment you unlock.
 - 📱 **Install it, use it offline**: add NoteFlare to your home screen like an app. Read, write and unlock without a connection; changes sync when you're back.
 - 🔀 **Smart multi-device sync**: edits from two devices to the same note are merged line by line, like `git merge`. Only a true clash (same line, different text) becomes a separate copy.
+- ⚡ **Instant updates**: an edit on one device shows up on your other open devices right away, without reloading.
 - 🗝️ **Recovery code**: forget your passphrase without losing your notes, and change it without re-encrypting anything.
 - 🔒 **Auto-lock**: keys are wiped from memory after 15 minutes idle or with one click.
 - ✍️ **A Markdown editor that helps**: lists and checklists continue when you press Enter, Tab indents, and one tap turns lines into a checklist.
@@ -363,6 +364,7 @@ The service worker only exists in production builds. To try offline mode locally
 | Workers | 100,000 requests/day | One request per save; saves are debounced (~0.7 s) |
 | D1 | 5M rows read, 100k rows written per day; 500 MB per database | Refreshes only fetch notes changed since the last sync |
 | Access | 50 users | One seat per person you let in |
+| Durable Objects | 100,000 requests/day (incoming WebSocket messages count 1 per 20) | One object per person keeps the sockets of their open devices; it holds no data |
 | R2 (optional) | 10 GB stored | Only if you turn on [images](#️-images); one object per image |
 
 Personal use stays far below these limits. If a D1 daily limit is ever hit, queries pause until 00:00 UTC — nothing is lost.

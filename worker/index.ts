@@ -6,6 +6,7 @@ import { generateToken, hashToken, toApiToken, tokenPrefix, verifyToken, type To
 import { openApiSpec } from './openapi'
 import { backupKey, isBackupDate, listBackups, runScheduledBackups, toNote, toVault, type NoteRow, type VaultRow } from './backups'
 import { versionInfo, type UpdateEnv } from './updates'
+import { notifyLive } from './live'
 import {
   BATCH_MAX_BYTES,
   BATCH_MAX_NOTES,
@@ -27,7 +28,11 @@ interface Env extends AccessEnv, UpdateEnv {
   ASSETS: Fetcher
   /** Optional R2 bucket for encrypted image attachments. Without it the feature is off. */
   ATTACHMENTS?: R2Bucket
+  /** Durable Object namespace for live sync. Without it other devices pick changes up by polling. */
+  LIVE?: DurableObjectNamespace
 }
+
+export { LiveSync } from './liveObject'
 
 type Vars = { user: string; scope: TokenScope; via: 'session' | 'token' }
 type Ctx = Context<{ Bindings: Env; Variables: Vars }>
@@ -87,7 +92,8 @@ api.use('*', async (c, next) => {
 
   await next()
   // Attachments are immutable ciphertext and set their own private caching.
-  if (!c.res.headers.has('Cache-Control')) c.header('Cache-Control', 'no-store')
+  // (a WebSocket upgrade response has immutable headers)
+  if (c.res.status !== 101 && !c.res.headers.has('Cache-Control')) c.header('Cache-Control', 'no-store')
 })
 
 function unauthorized(c: Ctx, error: string, message: string) {
@@ -186,6 +192,24 @@ api.put('/vault', sessionOnly, async (c) => {
   return c.json({ version: body.version + 1 })
 })
 
+// ---------- Live sync ----------
+
+// WebSocket for the web app: the user's other open devices hear about changes (ids and versions only).
+api.get('/live', sessionOnly, async (c) => {
+  if (c.req.header('Upgrade')?.toLowerCase() !== 'websocket') return c.json({ error: 'upgrade_required' }, 426)
+  // Browsers send the cookie with cross-site socket upgrades: only our own pages may connect.
+  let originHost = ''
+  try {
+    originHost = new URL(c.req.header('Origin') ?? '').host
+  } catch {
+    // no or malformed Origin
+  }
+  if (!originHost || originHost !== new URL(c.req.url).host) return c.json({ error: 'forbidden' }, 403)
+  if (!c.env.LIVE) return c.json({ error: 'live_disabled' }, 501)
+  const stub = c.env.LIVE.get(c.env.LIVE.idFromName(c.get('user')))
+  return stub.fetch(new Request('https://live/connect', c.req.raw))
+})
+
 // ---------- Notes ----------
 
 /** Notes changed after `since` (server ms timestamp), oldest first. `since=0` returns everything. */
@@ -246,6 +270,7 @@ api.put('/notes/:id', needWrite, async (c) => {
     // Conflict: return the current server copy so the client can resolve it.
     return row ? c.json({ error: 'conflict', current: toNote(row) }, 409) : c.json({ error: 'not_found' }, 404)
   }
+  notifyLive(c.env, c.executionCtx, user, [{ id, version: row!.version }])
   return c.json<EncryptedNote>(toNote(row!))
 })
 
@@ -284,17 +309,21 @@ api.post('/notes/batch', needWrite, async (c) => {
     if (r.meta.changes) out.created.push({ id: notes[i].id, version: 1, createdAt: now, updatedAt: now })
     else out.skipped.push(notes[i].id)
   })
+  notifyLive(c.env, c.executionCtx, user, out.created.map(({ id, version }) => ({ id, version })))
   return c.json(out)
 })
 
 /** Delete forever (only notes already in the trash). */
 api.delete('/notes/:id', needWrite, async (c) => {
+  const id = c.req.param('id') ?? ''
   const res = await c.env.DB.prepare(
     'DELETE FROM notes WHERE user_id = ? AND id = ? AND trashed_at IS NOT NULL',
   )
-    .bind(c.get('user'), c.req.param('id') ?? '')
+    .bind(c.get('user'), id)
     .run()
-  return res.meta.changes ? c.body(null, 204) : c.json({ error: 'not_found' }, 404)
+  if (!res.meta.changes) return c.json({ error: 'not_found' }, 404)
+  notifyLive(c.env, c.executionCtx, c.get('user'), [{ id, version: 0 }])
+  return c.body(null, 204)
 })
 
 // ---------- API tokens (web app only) ----------

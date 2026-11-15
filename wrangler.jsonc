@@ -32,6 +32,10 @@
   // (free for the first 10 GB, but it asks for a payment method), which is why it is off by default.
   // "r2_buckets": [{ "binding": "ATTACHMENTS", "bucket_name": "noteflare-attachments" }],
 
+  // Live sync: tells your other open devices to pull right after a change (only note ids and versions).
+  "durable_objects": { "bindings": [{ "name": "LIVE", "class_name": "LiveSync" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["LiveSync"] }],
+
   "vars": {
     // Leave both as "todo": NoteFlare sets up Cloudflare Access itself on first open and keeps
     // the values in D1. To set them by hand instead: your team address

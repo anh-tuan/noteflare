@@ -55,6 +55,6 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), serviceWorker()],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   // Dev: `bun run dev:api` (wrangler, port 8787) + `bun run dev` (vite). The service worker is build-only.
-  server: { proxy: { '/api': 'http://localhost:8787' } },
+  server: { proxy: { '/api': { target: 'http://localhost:8787', ws: true } } },
   build: { outDir: 'dist' },
 })

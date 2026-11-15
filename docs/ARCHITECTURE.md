@@ -13,9 +13,11 @@ flowchart LR
   subgraph Cloudflare
     Access[Cloudflare Access] --> Worker[Worker · Hono]
     Worker --> D1[(D1 SQLite)]
+    Worker -- "id + version" --> Live[LiveSync<br/>Durable Object]
     Cron[Cron trigger] --> Worker
   end
   Sync -- "/api (Access session)" --> Access
+  Sync <-. "WebSocket /api/live" .-> Live
   CLI[CLI / SDK / other apps] -- "/api/v1 (Bearer token)" --> Access
 ```
 
@@ -28,6 +30,7 @@ flowchart LR
 | `worker/setup.ts` | First-run setup: creates the Access login with the owner's API token and keeps its settings in D1 |
 | `worker/tokens.ts` | Personal access tokens: generate, hash, verify |
 | `worker/openapi.ts` | OpenAPI 3.1 description served at `/api/v1/openapi.json` |
+| `worker/live.ts`, `worker/liveObject.ts` | Live sync: `notifyLive` builds the message, `LiveSync` is the Durable Object that holds a user's WebSockets |
 | `worker/updates.ts` | Checks GitHub for a newer release (cached, can be turned off) |
 | `shared/release.ts` | Version comparison and changelog parsing, shared by the Worker, the app and the release scripts |
 | `scripts/` | `release.mjs` cuts a version; `release-notes.mjs` prints one version's notes; `update-from-upstream.sh` updates a deployed copy, keeping its settings |
@@ -36,7 +39,7 @@ flowchart LR
 | `packages/cli/` | `noteflare` command-line tool built on the SDK |
 | `shared/types.ts` | Re-exports the wire types for the app and the Worker |
 | `src/lib/vault.tsx` | Vault state: set up, unlock, lock, recovery, change passphrase |
-| `src/lib/sync/` | Offline-first sync: `engine.ts` (NoteSync), `localStore.ts` (IndexedDB), `merge.ts` |
+| `src/lib/sync/` | Offline-first sync: `engine.ts` (NoteSync), `localStore.ts` (IndexedDB), `merge.ts`, `live.ts` (WebSocket to `/api/live`) |
 | `src/lib/notes.ts` | React hook that connects the UI to NoteSync |
 | `src/lib/importMarkdown.ts`, `importKeep.ts` | Turn dropped folders and files (Markdown, Google Keep exports) into notes |
 | `src/lib/exportNotes.ts`, `zip.ts` | Markdown export, encrypted backup and restore |
@@ -90,6 +93,8 @@ The web app is offline-first. The UI reads and writes IndexedDB; NoteSync moves 
 - Labels are merged as sets. For pin, archive and color, the local change wins.
 
 **Pulling.** The engine asks for notes changed since the last pull (with a 2-second overlap for clock skew) and reconciles deletions against `/notes/index`.
+
+**Live updates.** The app opens a WebSocket to `/api/live` (session only, same origin only). It is served by `LiveSync`, a Durable Object with one instance per user, so a socket only hears about its owner's notes. After each successful write the Worker sends `{ id, version }` pairs (version 0 = deleted), never content or titles; the app then runs a normal pull. If the socket is down or the `LIVE` binding is missing, polling and the visibility check still sync.
 
 **Retrying.** Failed pushes retry every 5 seconds and when the tab becomes visible again. Nothing is lost while offline: the outbox lives in IndexedDB.
 

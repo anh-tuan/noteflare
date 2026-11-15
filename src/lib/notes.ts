@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { api } from './api'
 import { localStore } from './sync/localStore'
 import { NoteSync } from './sync/engine'
+import { startLiveSync } from './sync/live'
 import { t } from '../i18n'
 
 export { emptyNote, isEmptyNote, toggleTask, type Note, type NotePatch } from './noteModel'
@@ -31,6 +32,7 @@ export function useNotes(dek: CryptoKey) {
 
   useEffect(() => {
     void engine.start()
+    const stopLive = startLiveSync(() => void engine.sync())
 
     const onOnline = () => void engine.sync({ reconcile: true })
     const onOffline = () => engine.markOffline()
@@ -54,6 +56,7 @@ export function useNotes(dek: CryptoKey) {
     document.addEventListener('visibilitychange', onVisibility)
     return () => {
       clearInterval(timer)
+      stopLive()
       window.removeEventListener('online', onOnline)
       window.removeEventListener('offline', onOffline)
       window.removeEventListener('beforeunload', onBeforeUnload)

@@ -37,6 +37,7 @@ App ghi chú đơn giản, riêng tư, không cần máy chủ — mã hoá đ�
 - ✨ **Mở khoá là giải mã tại chỗ**: từng ghi chú hiện ra từ ciphertext ngay khi bạn mở khoá.
 - 📱 **Cài như app, dùng được khi offline**: thêm NoteFlare vào màn hình chính. Đọc, viết, mở khoá không cần mạng; có mạng lại thì tự đồng bộ.
 - 🔀 **Đồng bộ nhiều thiết bị thông minh**: hai máy cùng sửa một ghi chú thì được gộp theo từng dòng, giống `git merge`. Chỉ khi sửa cùng một dòng khác nhau mới tách thành bản riêng.
+- ⚡ **Cập nhật tức thì**: sửa trên một thiết bị, các thiết bị khác đang mở thấy ngay, không cần tải lại.
 - 🗝️ **Mã khôi phục**: quên passphrase vẫn không mất ghi chú; đổi passphrase không cần mã hoá lại.
 - 🔒 **Tự khoá**: khoá bị xoá khỏi bộ nhớ sau 15 phút không thao tác, hoặc chỉ với một cú nhấp.
 - ✍️ **Trình soạn Markdown biết giúp bạn**: danh sách và checklist tự nối dòng khi nhấn Enter, Tab để thụt lề, một chạm để biến các dòng thành checklist.
@@ -347,6 +348,7 @@ Service worker chỉ có trong bản build production. Muốn thử chế độ 
 | Workers | 100.000 request/ngày | Mỗi lần lưu là 1 request, có debounce khoảng 0,7 giây |
 | D1 | 5 triệu row đọc, 100.000 row ghi/ngày; 500 MB/database | Mỗi lần làm mới chỉ tải note đã thay đổi |
 | Access | 50 người dùng | Mỗi người bạn cho vào chiếm một chỗ |
+| Durable Objects | 100.000 request/ngày (mỗi 20 tin nhắn WebSocket gửi tới tính 1) | Mỗi người một object giữ các kết nối của thiết bị đang mở; không lưu dữ liệu |
 | R2 (tuỳ chọn) | 10 GB lưu trữ | Chỉ khi bạn bật [ảnh](#️-ảnh); mỗi ảnh là một object |
 
 ## 🎨 Tuỳ biến

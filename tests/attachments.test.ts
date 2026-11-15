@@ -1,10 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import worker from '../worker/index'
 import { createVault, decryptBlob, encryptBlob } from '../src/lib/crypto'
 import { attachmentIdOf, attachmentIds, rewriteAttachments } from '../src/lib/attachments'
 import { markdownEntries } from '../src/lib/exportNotes'
 import { emptyNote } from '../src/lib/noteModel'
 import { MAX_ATTACHMENT_BYTES } from '../shared/types'
+
+// Only exists inside the Workers runtime.
+vi.mock('cloudflare:workers', () => ({ DurableObject: class {} }))
 
 const ID_A = '11111111-2222-4333-8444-555555555555'
 const ID_B = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'
