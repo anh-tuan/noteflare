@@ -185,7 +185,7 @@ Cloudflare Workers (Static Assets, Cron Trigger) · D1 · Cloudflare Access + jo
 
 ### Một cú nhấp (không cần biết lập trình)
 
-Xem trước từng bước: [video 3 phút rưỡi](https://noteflare.homielab.com/vi/start/deploy/).
+Xem trước từng bước: [video 3 phút có thuyết minh](https://noteflare.homielab.com/vi/start/deploy/).
 
 Bạn cần một tài khoản [Cloudflare](https://dash.cloudflare.com/sign-up) miễn phí và một tài khoản [GitHub](https://github.com/signup) miễn phí. Mất khoảng 10 phút, phần lớn là chờ lần deploy đầu tiên.
 

@@ -197,7 +197,7 @@ random 256-bit DEK ──AES-GCM, AAD = "note:<id>"──► note ciphertext    
 
 ### One click (no coding needed)
 
-Watch every step first: [3½-minute video](https://noteflare.homielab.com/start/deploy/).
+Watch every step first: [3-minute video with narration](https://noteflare.homielab.com/start/deploy/).
 
 You need a free [Cloudflare](https://dash.cloudflare.com/sign-up) account and a free [GitHub](https://github.com/signup) account. It takes about 10 minutes, most of it waiting for the first deploy.
 
