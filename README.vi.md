@@ -185,12 +185,16 @@ Cloudflare Workers (Static Assets, Cron Trigger) · D1 · Cloudflare Access + jo
 
 ### Một cú nhấp (không cần biết lập trình)
 
+Xem trước từng bước: [video 3 phút rưỡi](https://noteflare.homielab.com/vi/start/deploy/).
+
 Bạn cần một tài khoản [Cloudflare](https://dash.cloudflare.com/sign-up) miễn phí và một tài khoản [GitHub](https://github.com/signup) miễn phí. Mất khoảng 10 phút, phần lớn là chờ lần deploy đầu tiên.
 
 **Phần 1: Triển khai app**
 
 1. Nhấn nút **Deploy to Cloudflare** ở đầu trang này và đăng nhập Cloudflare.
-2. Ở mục **Git account**, kết nối tài khoản GitHub của bạn. Giữ nguyên dấu tick **Create private Git repository**.
+2. Ở mục **Git account**, kết nối tài khoản GitHub của bạn (**New GitHub connection**, rồi **Authorize** và **Install & Authorize** trên GitHub) và chọn nó. Tick **Create private Git repository**.
+
+   Nếu sau khi kết nối GitHub, Cloudflare hiện *Select a repository*, hãy nhấn lại nút Deploy to Cloudflare: tài khoản của bạn giờ đã có trong danh sách.
 3. Điền form. Chỉ một ô cần nhập:
 
    | Ô | Cần làm gì |
@@ -198,8 +202,8 @@ Bạn cần một tài khoản [Cloudflare](https://dash.cloudflare.com/sign-up)
    | `ALLOWED_EMAILS` | Nhập email của chính bạn. |
    | Các ô còn lại | Giữ nguyên (`ACCESS_TEAM_DOMAIN` và `ACCESS_AUD` để `todo`). |
 
-4. Nhấn **Create and deploy** và chờ vài phút cho tới khi xong.
-5. Mở đường link Cloudflare đưa cho bạn (dạng `noteflare.<subdomain>.workers.dev`). NoteFlare hiện **Hoàn tất cài đặt NoteFlare**.
+4. Nhấn **Deploy** và chờ build xong (khoảng một phút).
+5. Mở **Overview** và nhấn **Visit** (link dạng `noteflare.<subdomain>.workers.dev`; nếu trang ghi *No URLs enabled*, hãy tải lại trang). NoteFlare hiện **Hoàn tất cài đặt NoteFlare**.
 
 **Phần 2: Cài đặt đăng nhập**
 

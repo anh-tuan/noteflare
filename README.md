@@ -197,12 +197,16 @@ random 256-bit DEK ──AES-GCM, AAD = "note:<id>"──► note ciphertext    
 
 ### One click (no coding needed)
 
+Watch every step first: [3½-minute video](https://noteflare.homielab.com/start/deploy/).
+
 You need a free [Cloudflare](https://dash.cloudflare.com/sign-up) account and a free [GitHub](https://github.com/signup) account. It takes about 10 minutes, most of it waiting for the first deploy.
 
 **Part 1: Deploy the app**
 
 1. Click the **Deploy to Cloudflare** button at the top of this page and sign in to Cloudflare.
-2. Under **Git account**, connect your GitHub account. Keep **Create private Git repository** ticked.
+2. Under **Git account**, connect your GitHub account (**New GitHub connection**, then **Authorize** and **Install & Authorize** on GitHub) and pick it. Tick **Create private Git repository**.
+
+   If Cloudflare shows *Select a repository* after connecting GitHub, click the Deploy to Cloudflare button again: your account is now in the list.
 3. Fill in the form. Only one field needs typing:
 
    | Field | What to do |
@@ -210,8 +214,8 @@ You need a free [Cloudflare](https://dash.cloudflare.com/sign-up) account and a 
    | `ALLOWED_EMAILS` | Type your own email address. |
    | Everything else | Keep it as it is (`ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` stay `todo`). |
 
-4. Click **Create and deploy** and wait a few minutes until it finishes.
-5. Open the link Cloudflare shows you (it looks like `noteflare.<your-subdomain>.workers.dev`). NoteFlare shows **Finish setting up NoteFlare**.
+4. Click **Deploy** and wait until the build finishes (about a minute).
+5. Open **Overview** and click **Visit** (the link looks like `noteflare.<your-subdomain>.workers.dev`; if it says *No URLs enabled*, reload the page). NoteFlare shows **Finish setting up NoteFlare**.
 
 **Part 2: Set up the login**
 
