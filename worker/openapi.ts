@@ -228,6 +228,37 @@ export function openApiSpec(origin: string) {
           responses: { 200: { description: 'Created ids and skipped (already existing) ids' }, 403: error('Read-only token') },
         },
       },
+      '/backups': {
+        get: {
+          summary: 'Daily encrypted backups saved by the server, newest first (empty without attachment storage)',
+          responses: {
+            200: json({
+              type: 'object',
+              properties: {
+                backups: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: { date: { type: 'string', format: 'date' }, size: { type: 'integer' } },
+                  },
+                },
+              },
+            }),
+          },
+        },
+      },
+      '/backups/{date}': {
+        get: {
+          summary: 'One backup: the same encrypted JSON file the app exports',
+          parameters: [{ name: 'date', in: 'path', required: true, schema: { type: 'string', format: 'date' } }],
+          responses: {
+            200: { description: 'The backup file', content: { 'application/json': { schema: { type: 'object' } } } },
+            400: error('Not a YYYY-MM-DD date'),
+            404: error('No backup for that day'),
+            501: error('This deployment has no attachment storage'),
+          },
+        },
+      },
       '/blobs/{id}': {
         get: {
           summary: 'An encrypted image attachment: iv || AES-GCM ciphertext, AAD "blob:<id>"',

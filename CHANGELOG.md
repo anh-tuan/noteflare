@@ -7,6 +7,7 @@ All notable changes to NoteFlare are recorded here. The format follows [Keep a C
 ### Added
 
 - Portuguese (Brazil) interface.
+- With image storage turned on, NoteFlare saves an encrypted backup every day and keeps the last 14; restore one from Export and backup.
 - Deploy with an AI coding agent: paste the prompt from the README into Claude Code, Codex or a similar tool.
 - Let Claude, Cursor and other AI tools read and write your notes through the CLI's MCP server; notes are decrypted on your computer.
 

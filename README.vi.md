@@ -92,6 +92,8 @@ File được đọc và mã hoá ngay trong trình duyệt rồi tải lên the
 - **Bản sao lưu đã mã hoá**: một file `.json` chứa ghi chú đúng như máy chủ lưu, vẫn ở dạng mã hoá. Không có passphrase thì vô dụng. Không bao gồm thùng rác và ảnh đính kèm.
 - **Khôi phục**: chọn một bản sao lưu đã mã hoá, ghi chú trong đó được thêm vào sổ; ghi chú bạn đã có sẽ được bỏ qua. Bản sao lưu từ một bản triển khai khác, hoặc từ trước khi đặt lại bằng mã khôi phục, sẽ hỏi passphrase đang dùng vào lúc tạo nó.
 
+Khi đã bật binding R2 (xem mục Ảnh), NoteFlare còn tự lưu một bản sao lưu đã mã hoá mỗi ngày và giữ 14 bản gần nhất. Chúng nằm ở mục **Sao lưu hằng ngày** trong cùng hộp thoại; khôi phục từ đó.
+
 ## 🖼️ Ảnh
 
 Ghi chú có thể kèm ảnh, được mã hoá như mọi thứ khác. Tính năng này mặc định tắt vì cần một bucket R2, và R2 yêu cầu phương thức thanh toán dù có 10 GB miễn phí.

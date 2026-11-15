@@ -94,6 +94,8 @@ Files are read and encrypted in your browser and uploaded in batches. Try it wit
 - **Encrypted backup**: one `.json` file with your notes exactly as the server stores them, still encrypted. It is useless without your passphrase. The trash and attached images are left out.
 - **Restore**: pick an encrypted backup and its notes are added to your notebook; notes you already have are skipped. A backup from another deployment, or from before a recovery-code reset, asks for the passphrase that was in use when it was made.
 
+With the R2 binding on (see Images), NoteFlare also saves an encrypted backup every day and keeps the last 14. They are listed under **Daily backups** in the same dialog; restore one from there.
+
 ## 🖼️ Images
 
 Notes can carry images, encrypted like everything else. This is off by default because it needs an R2 bucket, and R2 asks for a payment method even on its free 10 GB.

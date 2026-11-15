@@ -206,6 +206,8 @@ never sent automatically by browsers, so this is safe).
 | GET | `/blobs/{id}` | read | An encrypted image attachment (binary) |
 | PUT | `/blobs/{id}` | write | Store an encrypted attachment: raw bytes, `Content-Type: application/octet-stream`, at most 10 MB before encryption |
 | DELETE | `/blobs/{id}` | write | Delete an attachment |
+| GET | `/backups` | read | `{ "backups": [{ "date": "2026-11-16", "size": 12345 }] }`, newest first; empty without the R2 binding |
+| GET | `/backups/{date}` | read | One daily backup (`YYYY-MM-DD`): the encrypted JSON file the app exports. `501` without the R2 binding |
 
 A note as stored on the server:
 
@@ -238,6 +240,8 @@ const { markdown } = await nf.uploadAttachment(bytes, 'image/png', 'diagram')
 await nf.create({ title: 'With a picture', body: markdown })
 const { bytes: image, type } = await nf.getAttachment(id)
 ```
+
+With the same bucket, the daily cron saves each user's encrypted backup under `backups/<email>/<date>.json` and keeps the newest 14. They are ciphertext, like `GET /notes`.
 
 The server does not track which note uses which blob. Delete a blob yourself when you delete the last note that refers to it.
 

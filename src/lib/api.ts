@@ -79,5 +79,7 @@ export const api = {
   putBlob: (id: string, data: Uint8Array<ArrayBuffer>) =>
     raw(`/blobs/${id}`, { method: 'PUT', body: data, headers: { 'Content-Type': 'application/octet-stream' } }).then(() => undefined),
   getBlob: (id: string) => raw(`/blobs/${id}`).then(async (res) => new Uint8Array(await res.arrayBuffer())),
+  listBackups: () => req<{ backups: { date: string; size: number }[] }>('/backups').then((r) => r.backups),
+  getBackup: (date: string) => raw(`/backups/${date}`).then((res) => res.text()),
   deleteBlob: (id: string) => raw(`/blobs/${id}`, { method: 'DELETE' }).then(() => undefined),
 }

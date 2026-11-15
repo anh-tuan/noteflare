@@ -105,7 +105,7 @@ The manifest declares a `share_target` (GET, so shares pass through Cloudflare A
 
 ## Scheduled work
 
-A daily cron trigger deletes notes that have been in the trash for more than 30 days.
+A daily cron trigger deletes notes that have been in the trash for more than 30 days. With the `ATTACHMENTS` R2 binding, it then writes each user's encrypted backup (`worker/backups.ts`, the same file the app exports) to `backups/<email>/<date>.json` and keeps the newest 14.
 
 ## Versions and updates
 

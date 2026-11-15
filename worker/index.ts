@@ -4,6 +4,7 @@ import { getAccessUser, isAccessMissing, isAllowedEmail, LOCAL_HOSTS, type Acces
 import { d1Settings, isUnset, needsSetup, resolveAccess, runSetup, SetupError, TOKEN_URL } from './setup'
 import { generateToken, hashToken, toApiToken, tokenPrefix, verifyToken, type TokenRow } from './tokens'
 import { openApiSpec } from './openapi'
+import { backupKey, isBackupDate, listBackups, runScheduledBackups, toNote, toVault, type NoteRow, type VaultRow } from './backups'
 import { versionInfo, type UpdateEnv } from './updates'
 import {
   BATCH_MAX_BYTES,
@@ -131,14 +132,9 @@ api.get('/vault', async (c) => {
     'SELECT kdf, wrapped_dek, recovery_dek, version FROM vaults WHERE user_id = ?',
   )
     .bind(c.get('user'))
-    .first<{ kdf: string; wrapped_dek: string; recovery_dek: string; version: number }>()
+    .first<VaultRow>()
   if (!row) return c.json({ error: 'not_found' }, 404)
-  return c.json<VaultRecord>({
-    kdf: JSON.parse(row.kdf),
-    wrappedDek: row.wrapped_dek,
-    recoveryDek: row.recovery_dek,
-    version: row.version,
-  })
+  return c.json<VaultRecord>(toVault(row))
 })
 
 /** Create the vault (version = 0) or change the passphrase (version = current version). */
@@ -352,6 +348,30 @@ api.delete('/blobs/:id', needWrite, async (c) => {
   return c.body(null, 204)
 })
 
+// ---------- Scheduled backups ----------
+// The daily cron saves each user's encrypted vault and notes (the file the app exports) in the same bucket.
+
+api.get('/backups', async (c) => {
+  const bucket = c.env.ATTACHMENTS
+  return c.json({ backups: bucket ? await listBackups(bucket, c.get('user')) : [] })
+})
+
+api.get('/backups/:date', async (c) => {
+  const bucket = c.env.ATTACHMENTS
+  if (!bucket) return noAttachments(c)
+  const date = c.req.param('date') ?? ''
+  if (!isBackupDate(date)) return c.json({ error: 'invalid_date' }, 400)
+  const object = await bucket.get(backupKey(c.get('user'), date))
+  if (!object) return c.json({ error: 'not_found' }, 404)
+  return new Response(object.body, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Disposition': `attachment; filename="noteflare-backup-${date}.json"`,
+      'Cache-Control': 'private, no-store',
+    },
+  })
+})
+
 api.get('/tokens', sessionOnly, async (c) => {
   const { results } = await c.env.DB.prepare(
     `SELECT id, user_id, name, prefix, scope, created_at, last_used_at, expires_at
@@ -494,19 +514,6 @@ app.onError((err, c) => {
 
 // ---------- helpers ----------
 
-interface NoteRow {
-  id: string
-  ciphertext: string
-  iv: string
-  pinned: number
-  archived: number
-  trashed_at: number | null
-  position: number
-  version: number
-  created_at: number
-  updated_at: number
-}
-
 function getNote(db: D1Database, user: string, id: string) {
   return db
     .prepare(
@@ -515,21 +522,6 @@ function getNote(db: D1Database, user: string, id: string) {
     )
     .bind(user, id)
     .first<NoteRow>()
-}
-
-function toNote(r: NoteRow): EncryptedNote {
-  return {
-    id: r.id,
-    ciphertext: r.ciphertext,
-    iv: r.iv,
-    pinned: !!r.pinned,
-    archived: !!r.archived,
-    trashedAt: r.trashed_at,
-    position: r.position,
-    version: r.version,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
-  }
 }
 
 function isValidNoteBody(b: unknown): b is Omit<PutNoteBody, 'baseVersion'> & { baseVersion?: number } {
@@ -556,5 +548,6 @@ export default {
     await env.DB.prepare('DELETE FROM notes WHERE trashed_at IS NOT NULL AND trashed_at < ?')
       .bind(Date.now() - TRASH_TTL_MS)
       .run()
+    await runScheduledBackups(env)
   },
 } satisfies ExportedHandler<Env>
