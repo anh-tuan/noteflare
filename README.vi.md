@@ -181,7 +181,7 @@ noteflare export ./backup                                 # Markdown nhập lạ
 
 `noteflare mcp` cho phép Claude, Cursor và các công cụ AI khác đọc và ghi ghi chú của bạn, giải mã ngay trên máy bạn: xem [MCP server](docs/API.md#mcp-server-ai-tools).
 
-Token chỉ lấy được bản đã mã hoá: client vẫn cần passphrase của bạn mới đọc được. **[Hướng dẫn API](docs/API.md)** (tiếng Anh) mô tả các endpoint, đồng bộ, xử lý xung đột, cấu hình Cloudflare Access cho `/api/v1` và định dạng mã hoá chính xác kèm ví dụ Python — để viết client bằng bất kỳ ngôn ngữ nào. Spec OpenAPI có tại `/api/v1/openapi.json`.
+Token chỉ lấy được bản đã mã hoá: client vẫn cần passphrase của bạn mới đọc được. Mỗi địa chỉ IP gửi được 60 request kèm token mỗi phút; quá mức đó API trả `429` (đổi ở mục `ratelimits` trong `wrangler.jsonc`). **[Hướng dẫn API](docs/API.md)** (tiếng Anh) mô tả các endpoint, đồng bộ, xử lý xung đột, cấu hình Cloudflare Access cho `/api/v1` và định dạng mã hoá chính xác kèm ví dụ Python — để viết client bằng bất kỳ ngôn ngữ nào. Spec OpenAPI có tại `/api/v1/openapi.json`.
 
 ## 🔐 Mã hoá hoạt động thế nào
 

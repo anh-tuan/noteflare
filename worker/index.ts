@@ -7,6 +7,7 @@ import { openApiSpec } from './openapi'
 import { backupKey, isBackupDate, listBackups, runScheduledBackups, toNote, toVault, type NoteRow, type VaultRow } from './backups'
 import { versionInfo, type UpdateEnv } from './updates'
 import { notifyLive } from './live'
+import { isRateLimited, rateLimitedBody, RETRY_AFTER_S, type RateLimiter } from './rateLimit'
 import { publicShare, purgeShares, revokeNoteShares, sharePage, sharePageHeaders, toShareInfo, type ShareRow } from './shares'
 import {
   BATCH_MAX_BYTES,
@@ -38,6 +39,9 @@ interface Env extends AccessEnv, UpdateEnv {
   ATTACHMENTS?: R2Bucket
   /** Durable Object namespace for live sync. Without it other devices pick changes up by polling. */
   LIVE?: DurableObjectNamespace
+  /** Optional per-IP limits (wrangler.jsonc `ratelimits`). Without them nothing is limited. */
+  TOKEN_LIMITER?: RateLimiter
+  SETUP_LIMITER?: RateLimiter
 }
 
 export { LiveSync } from './liveObject'
@@ -71,6 +75,7 @@ api.use('*', async (c, next) => {
   if (isV1(c)) {
     const m = /^Bearer\s+(\S+)$/i.exec(c.req.header('Authorization') ?? '')
     if (!m) return unauthorized(c, 'unauthorized', 'Send a NoteFlare API token: Authorization: Bearer nf_…')
+    if (await isRateLimited(c.env.TOKEN_LIMITER, c.req.raw)) return tooMany(c)
     const t = await verifyToken(c.env.DB, m[1], c.executionCtx)
     // A token stops working when its owner is removed from ALLOWED_EMAILS.
     if (!t || !isAllowedEmail(t.user, access)) return unauthorized(c, 'invalid_token', 'This token is unknown, revoked or expired.')
@@ -103,6 +108,10 @@ api.use('*', async (c, next) => {
   // (a WebSocket upgrade response has immutable headers)
   if (c.res.status !== 101 && !c.res.headers.has('Cache-Control')) c.header('Cache-Control', 'no-store')
 })
+
+function tooMany(c: Context) {
+  return c.json(rateLimitedBody, 429, { 'Retry-After': String(RETRY_AFTER_S) })
+}
 
 function unauthorized(c: Ctx, error: string, message: string) {
   return c.json({ error, message }, 401, { 'WWW-Authenticate': 'Bearer realm="noteflare"' })
@@ -646,6 +655,7 @@ app.get('/api/setup', async (c) => {
 
 app.post('/api/setup', async (c) => {
   c.header('Cache-Control', 'no-store')
+  if (await isRateLimited(c.env.SETUP_LIMITER, c.req.raw)) return tooMany(c)
   if (!c.req.header('Content-Type')?.toLowerCase().startsWith('application/json')) {
     return c.json({ error: 'unsupported_media_type' }, 415)
   }

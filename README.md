@@ -183,7 +183,7 @@ noteflare export ./backup                                 # Markdown you can re-
 
 `noteflare mcp` lets Claude, Cursor and other AI tools read and write your notes, decrypted on your computer: see [MCP server](docs/API.md#mcp-server-ai-tools).
 
-Tokens reach only the encrypted copy: a client still needs your passphrase to read anything. The **[API guide](docs/API.md)** covers the endpoints, syncing, conflict handling, Cloudflare Access setup for `/api/v1`, and the exact encryption format with a Python example — so clients can be written in any language. The OpenAPI spec is served at `/api/v1/openapi.json`.
+Tokens reach only the encrypted copy: a client still needs your passphrase to read anything. Each IP address can make 60 token requests a minute; past that the API answers `429` (change it under `ratelimits` in `wrangler.jsonc`). The **[API guide](docs/API.md)** covers the endpoints, syncing, conflict handling, Cloudflare Access setup for `/api/v1`, and the exact encryption format with a Python example — so clients can be written in any language. The OpenAPI spec is served at `/api/v1/openapi.json`.
 
 ## 🔐 How the encryption works
 

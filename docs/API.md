@@ -335,11 +335,13 @@ Errors look like `{ "error": "code", "message": "…" }`.
 | 409 | `conflict` | The note changed since `baseVersion`; `current` holds the server copy |
 | 413 | `too_large` | Batch request over 8 MB |
 | 415 | `unsupported_media_type` | `POST` without `Content-Type: application/json` |
+| 429 | `rate_limited` | Too many requests from your IP address; wait for the `Retry-After` seconds |
 
 | Limit | Value |
 |---|---|
 | Ciphertext per note | 512 KB of base64 (about 380 KB of text) |
 | Notes per batch | 40, up to 8 MB |
+| Requests with a token | 60 a minute per IP address (`TOKEN_LIMITER` in `wrangler.jsonc`; without it, no limit) |
 | Tokens per account | 25 |
 
 ## Security notes
