@@ -41,7 +41,7 @@ flowchart LR
 | `src/lib/vault.tsx` | Vault state: set up, unlock, lock, recovery, change passphrase |
 | `src/lib/sync/` | Offline-first sync: `engine.ts` (NoteSync), `localStore.ts` (IndexedDB), `merge.ts`, `live.ts` (WebSocket to `/api/live`) |
 | `src/lib/notes.ts` | React hook that connects the UI to NoteSync |
-| `src/lib/importMarkdown.ts`, `importKeep.ts` | Turn dropped folders and files (Markdown, Google Keep exports) into notes |
+| `src/lib/importMarkdown.ts`, `importKeep.ts`, `importEvernote.ts`, `importSimplenote.ts`, `importStandardNotes.ts` | Turn dropped folders and files (Markdown, Google Keep, Evernote, Simplenote, Standard Notes exports) into notes |
 | `src/lib/exportNotes.ts`, `zip.ts` | Markdown export, encrypted backup and restore |
 | `src/lib/attachments.tsx` | Encrypted image attachments: upload, decrypt, render |
 | `src/lib/highlight.ts` | Languages bundled for code highlighting |

@@ -33,7 +33,7 @@ A simple, private, serverless notes app — end-to-end encrypted, completely fre
 - 🎨 **Yours to customize**: plain React, Tailwind and shadcn/ui, a small Hono API and plain SQL migrations.
 - 📝 **Markdown notes**: headings, tables, quotes, syntax-highlighted code and `- [ ]` checklists you can tick right on the card.
 - 📌 **Organize your way**: pin, drag notes into the order you want, 8 paper colors, labels, archive, and a trash that empties itself after 30 days.
-- 📥 **Drag-and-drop import**: drop a folder of Markdown (an Obsidian vault works) or a Google Keep export, and every note arrives encrypted.
+- 📥 **Drag-and-drop import**: drop a folder of Markdown (an Obsidian vault works), a Google Keep export, or an Evernote, Simplenote or Standard Notes export, and every note arrives encrypted.
 - 📤 **Export and backup**: download your notes as Markdown, or as an encrypted backup you can restore later.
 - 🖼️ **Encrypted images** (optional): attach images that are encrypted before upload, stored in your own R2 bucket.
 - ✨ **Decrypt-in-place unlock**: watch every note resolve from ciphertext the moment you unlock.
@@ -86,6 +86,11 @@ Files are read and encrypted in your browser and uploaded in batches. Try it wit
 - **Skipped**: `.obsidian`, `.git`, `node_modules`, non-Markdown files, and notes you already have (same title and body) — importing twice is safe
 
 **From Google Keep**: export Keep with [Google Takeout](https://takeout.google.com/), unzip it, and drop the `Keep` folder (or use **Account → Import from Google Keep…**). Titles, text, checklists, labels, colors, pinned and archived come across; notes in Keep's trash and attachments (images, audio) do not.
+
+**From Evernote, Simplenote or Standard Notes**: drop the export file onto NoteFlare, or use **Account → Import from Evernote, Simplenote, Standard Notes…**.
+- **Evernote**: File → Export notes as `.enex`. Title, text, checklists and tags come across; attachments do not.
+- **Simplenote**: Settings → Export notes, unzip it and drop `notes.json`. Tags and pinned come across; the trash is skipped.
+- **Standard Notes**: Backups → download a decrypted backup. Notes, tags, pinned and archived come across; encrypted backups can't be read.
 
 ## 📤 Export and backup
 

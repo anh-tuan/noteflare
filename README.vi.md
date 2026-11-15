@@ -31,7 +31,7 @@ App ghi chú đơn giản, riêng tư, không cần máy chủ — mã hoá đ�
 - 🎨 **Tuỳ biến theo ý bạn**: React, Tailwind, shadcn/ui thuần; một API Hono nhỏ và các file migration SQL thuần.
 - 📝 **Ghi chú markdown**: tiêu đề, bảng, trích dẫn, code có tô màu cú pháp, checklist `- [ ]` tick ngay trên thẻ.
 - 📌 **Sắp xếp theo cách của bạn**: ghim, kéo ghi chú theo thứ tự bạn muốn, 8 màu giấy, nhãn, lưu trữ, thùng rác tự dọn sau 30 ngày.
-- 📥 **Kéo thả để nhập**: thả một thư mục Markdown (vault Obsidian cũng được) hoặc bản xuất Google Keep, mọi ghi chú được mã hoá khi nhập.
+- 📥 **Kéo thả để nhập**: thả một thư mục Markdown (vault Obsidian cũng được), bản xuất Google Keep hoặc bản xuất Evernote, Simplenote, Standard Notes, mọi ghi chú được mã hoá khi nhập.
 - 📤 **Xuất và sao lưu**: tải ghi chú về dạng Markdown, hoặc một bản sao lưu đã mã hoá để khôi phục sau này.
 - 🖼️ **Ảnh mã hoá** (tuỳ chọn): đính kèm ảnh được mã hoá trước khi tải lên, lưu trong bucket R2 của riêng bạn.
 - ✨ **Mở khoá là giải mã tại chỗ**: từng ghi chú hiện ra từ ciphertext ngay khi bạn mở khoá.
@@ -84,6 +84,11 @@ File được đọc và mã hoá ngay trong trình duyệt rồi tải lên the
 - **Bỏ qua**: `.obsidian`, `.git`, `node_modules`, file không phải Markdown và ghi chú đã có (cùng tiêu đề và nội dung) — nhập hai lần vẫn an toàn
 
 **Từ Google Keep**: xuất Keep bằng [Google Takeout](https://takeout.google.com/), giải nén rồi thả thư mục `Keep` vào (hoặc chọn **Tài khoản → Nhập từ Google Keep…**). Tiêu đề, nội dung, checklist, nhãn, màu, ghim và lưu trữ được giữ lại; ghi chú trong thùng rác của Keep và tệp đính kèm (ảnh, âm thanh) thì không.
+
+**Từ Evernote, Simplenote hoặc Standard Notes**: thả file xuất vào NoteFlare, hoặc chọn **Tài khoản → Nhập từ Evernote, Simplenote, Standard Notes…**.
+- **Evernote**: File → Export notes, chọn `.enex`. Tiêu đề, nội dung, checklist và thẻ được giữ lại; tệp đính kèm thì không.
+- **Simplenote**: Settings → Export notes, giải nén rồi thả `notes.json`. Thẻ và ghim được giữ lại; thùng rác bị bỏ qua.
+- **Standard Notes**: Backups → tải bản sao lưu đã giải mã. Ghi chú, thẻ, ghim và lưu trữ được giữ lại; bản sao lưu đã mã hoá thì không đọc được.
 
 ## 📤 Xuất và sao lưu
 

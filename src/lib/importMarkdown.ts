@@ -22,6 +22,8 @@ const MD_EXT = /\.(md|markdown|mdown|mkd)$/i
 /** Tool/system folders common in Obsidian vaults, git repos… */
 const SKIP_DIR = /^(\.git|\.obsidian|\.trash|\.github|node_modules|__MACOSX)$/i
 export const MAX_IMPORT_CHARS = 350_000 // fits the API's 512 KB ciphertext limit
+/** A whole-account export file (Evernote, Simplenote, Standard Notes) can hold thousands of notes. */
+export const MAX_EXPORT_BYTES = 100 * 1024 * 1024
 const MAX_LABEL = 40
 
 const inSkippedDir = (path: string) => path.split('/').some((seg) => SKIP_DIR.test(seg) || seg.startsWith('._'))
@@ -29,7 +31,9 @@ const inSkippedDir = (path: string) => path.split('/').some((seg) => SKIP_DIR.te
 export const isMarkdownPath = (path: string) => MD_EXT.test(path) && !inSkippedDir(path)
 /** Google Keep (Takeout) writes one .json file per note; see importKeep.ts. */
 export const isKeepPath = (path: string) => /\.json$/i.test(path) && !inSkippedDir(path)
-export const isImportablePath = (path: string) => isMarkdownPath(path) || isKeepPath(path)
+/** Evernote export (one file, many notes); see importEvernote.ts. */
+export const isEnexPath = (path: string) => /\.enex$/i.test(path) && !inSkippedDir(path)
+export const isImportablePath = (path: string) => isMarkdownPath(path) || isKeepPath(path) || isEnexPath(path)
 
 // ------------------------------------------------------------- collecting files
 

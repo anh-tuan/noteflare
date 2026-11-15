@@ -1,9 +1,11 @@
 import 'fake-indexeddb/auto'
+import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { BatchNoteItem, EncryptedNote, PutNoteBody } from '../shared/types'
 import { ApiError } from '../src/lib/api'
 import { decryptNote, encryptNote } from '../src/lib/crypto'
 import { emptyNote } from '../src/lib/noteModel'
+import { parseSimplenote } from '../src/lib/importSimplenote'
 import { createLocalStore, type LocalStore } from '../src/lib/sync/localStore'
 import { NoteSync, type SyncApi } from '../src/lib/sync/engine'
 
@@ -328,6 +330,17 @@ describe('offline-first sync', () => {
     await e.sync()
     expect(server.rows.size).toBe(3)
     expect(e.getSnapshot().status.pending).toBe(0)
+  })
+})
+
+describe('re-importing an export', () => {
+  it('adds nothing the second time', async () => {
+    const e = newEngine()
+    await e.start()
+    const raw = readFileSync(new URL('./fixtures/simplenote.json', import.meta.url), 'utf8')
+    const parsed = parseSimplenote('notes.json', raw)!
+    expect(await e.importMany(parsed)).toMatchObject({ created: 2, duplicates: 0 })
+    expect(await e.importMany(parseSimplenote('notes.json', raw)!)).toMatchObject({ created: 0, queued: 0, duplicates: 2 })
   })
 })
 
