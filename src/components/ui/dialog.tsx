@@ -15,7 +15,9 @@ function DialogContent({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & { showClose?: boolean; overlayStyle?: React.CSSProperties }) {
   return (
-    <DialogPrimitive.Portal>
+    // An explicit container renders in the same commit (Radix otherwise waits a render for
+    // document.body), so dialogs opened inside a view transition are in its snapshot.
+    <DialogPrimitive.Portal container={typeof document === 'undefined' ? undefined : document.body}>
       <DialogPrimitive.Overlay
         className="fixed inset-0 z-50 bg-black/40 duration-200 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0"
         style={overlayStyle}

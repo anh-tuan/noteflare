@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useRef, useState, type KeyboardEvent } from 'react'
 import { ImagePlus, ListChecks } from 'lucide-react'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
@@ -27,21 +27,28 @@ interface Props {
   onDeleteForever: (id: string) => void
 }
 
+/** Existing notes with text open in reading mode; new and empty ones open for typing. */
+const opensInPreview = (note: Note | null) => !!note?.body && note.version > 0
+
 export function NoteEditor({ note, transitionName, allLabels, saveState, onSave, onClose, onDeleteForever }: Props) {
   const { t } = useI18n()
   const [draft, setDraft] = useState<Note | null>(note)
-  const [preview, setPreview] = useState(false)
+  const [preview, setPreview] = useState(() => opensInPreview(note))
+  // Take the opened note during render, not in an effect: the dialog must be in the
+  // DOM when the view transition captures the new state, or the backdrop isn't its
+  // own layer and the header and cards show through it while the editor opens.
+  const [draftId, setDraftId] = useState(note?.id)
+  if (note?.id !== draftId) {
+    setDraftId(note?.id)
+    setDraft(note)
+    setPreview(opensInPreview(note))
+  }
   const bodyRef = useRef<HTMLTextAreaElement>(null)
   const imageInput = useRef<HTMLInputElement>(null)
   const attachments = useAttachments()
   // The newest draft, for work that finishes after an await (image uploads).
   const draftRef = useRef<Note | null>(note)
   draftRef.current = draft
-
-  useEffect(() => {
-    setDraft(note)
-    setPreview(!!note?.body && note.version > 0) // existing notes open in reading mode
-  }, [note?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const focusBody = (atEnd = true) =>
     requestAnimationFrame(() => {
