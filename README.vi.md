@@ -43,7 +43,7 @@ App ghi chú đơn giản, riêng tư, không cần máy chủ — mã hoá đ�
 - ✍️ **Trình soạn Markdown biết giúp bạn**: danh sách và checklist tự nối dòng khi nhấn Enter, Tab để thụt lề, một chạm để biến các dòng thành checklist.
 - 🌗 **Sáng/tối, dạng lưới hoặc danh sách, dùng tốt trên điện thoại**, phím tắt (nhấn `?` để xem), tôn trọng chế độ giảm chuyển động.
 - 🔄 **Thông báo cập nhật và ghi chú phát hành ngay trong app**, do chính Worker của bạn kiểm tra, không theo dõi.
-- 🌐 **Tiếng Anh (mặc định), tiếng Việt và tiếng Bồ Đào Nha (Brazil)**, đổi trong menu tài khoản; thêm ngôn ngữ chỉ cần một file.
+- 🌐 **Sáu ngôn ngữ có sẵn** — English, Español, Français, Deutsch, Português (Brasil), Tiếng Việt — lần đầu tự theo ngôn ngữ trình duyệt của bạn; thêm ngôn ngữ chỉ cần một file.
 - 🔌 **Tự xây client riêng**: token truy cập, API `/api/v1` ổn định có spec OpenAPI, SDK TypeScript lo phần mã hoá, và CLI.
 
 > [!TIP]
@@ -371,7 +371,7 @@ Service worker chỉ có trong bản build production. Muốn thử chế độ 
 - [x] Markdown với checklist tick được
 - [x] Nhãn, ghim, lưu trữ, thùng rác tự dọn
 - [x] Mở khoá giải mã tại chỗ và View Transitions
-- [x] Giao diện tiếng Anh, tiếng Việt và tiếng Bồ Đào Nha (Brazil)
+- [x] Giao diện tiếng Anh, Tây Ban Nha, Pháp, Đức, Bồ Đào Nha (Brasil) và tiếng Việt
 - [x] Kéo thả để nhập Markdown
 - [x] Cài như app, dùng được khi offline
 - [x] Tự động gộp 3 chiều giữa các thiết bị

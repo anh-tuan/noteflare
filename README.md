@@ -45,7 +45,7 @@ A simple, private, serverless notes app — end-to-end encrypted, completely fre
 - ✍️ **A Markdown editor that helps**: lists and checklists continue when you press Enter, Tab indents, and one tap turns lines into a checklist.
 - 🌗 **Light and dark, grid or list, mobile-ready**, keyboard shortcuts (press `?` to see them) and reduced-motion support.
 - 🔄 **Update notices and release notes in the app**, checked by your own Worker, with no tracking.
-- 🌐 **English, Vietnamese and Portuguese (Brazil)** out of the box; adding a language is one file.
+- 🌐 **Six languages out of the box** — English, Español, Français, Deutsch, Português (Brasil), Tiếng Việt — it follows your browser's language the first time, and adding another is one file.
 - 🔌 **Build your own clients**: personal access tokens, a stable `/api/v1` with an OpenAPI spec, a TypeScript SDK that handles the encryption, and a CLI.
 
 > [!TIP]
@@ -394,7 +394,7 @@ Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md), and open an 
 - [x] Markdown with tickable checklists
 - [x] Labels, pin, archive, trash with auto-purge
 - [x] Decrypt-in-place unlock and View Transitions
-- [x] English, Vietnamese and Portuguese (Brazil) UI
+- [x] UI in English, Spanish, French, German, Brazilian Portuguese and Vietnamese
 - [x] Drag-and-drop Markdown import
 - [x] Installable app that works offline
 - [x] Automatic three-way merge across devices

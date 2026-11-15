@@ -48,7 +48,7 @@ flowchart LR
 | `src/lib/reorder.ts` | Positions for drag-and-drop ordering |
 | `src/sw/sw.js` | Service worker; the Vite plugin in `vite.config.ts` fills in its precache list |
 | `src/components/` | UI, built on shadcn/ui and Tailwind |
-| `src/i18n/` | English (source of truth), Vietnamese and Portuguese (Brazil) messages |
+| `src/i18n/` | English (source of truth), Vietnamese, Spanish, French, German and Portuguese (Brazil) messages |
 | `tests/` | Vitest suites for crypto, auth, sync, merge, import and tokens |
 
 ## Data model
