@@ -5,7 +5,7 @@ import { d1Settings, isUnset, needsSetup, resolveAccess, runSetup, SetupError, T
 import { generateToken, hashToken, toApiToken, tokenPrefix, verifyToken, type TokenRow } from './tokens'
 import { openApiSpec } from './openapi'
 import { backupKey, isBackupDate, listBackups, runScheduledBackups, toNote, toVault, type NoteRow, type VaultRow } from './backups'
-import { versionInfo, type UpdateEnv } from './updates'
+import { dispatchUpdate, selfUpdateRepo, UpdateDispatchError, versionInfo, type UpdateEnv } from './updates'
 import { notifyLive } from './live'
 import { isRateLimited, rateLimitedBody, RETRY_AFTER_S, type RateLimiter } from './rateLimit'
 import { publicShare, purgeShares, revokeNoteShares, sharePage, sharePageHeaders, toShareInfo, type ShareRow } from './shares'
@@ -135,7 +135,23 @@ const sessionOnly = async (c: Ctx, next: Next) => {
 // ---------- User & vault ----------
 
 // This deployment's version and, unless disabled, the newest release on GitHub.
-api.get('/version', async (c) => c.json(await versionInfo(c.env, { force: c.req.query('refresh') === '1' })))
+api.get('/version', async (c) => {
+  const info = await versionInfo(c.env, { force: c.req.query('refresh') === '1' })
+  return c.json({ ...info, canUpdate: c.get('via') === 'session' && !!selfUpdateRepo(c.env) })
+})
+
+// "Update now": runs the update workflow in the deployment's own GitHub repository.
+// The GitHub token stays in the Worker; only the signed-in owner can start it.
+api.post('/update', sessionOnly, async (c) => {
+  if (!selfUpdateRepo(c.env)) return c.json({ error: 'not_configured', message: 'Set GITHUB_UPDATE_TOKEN and GITHUB_UPDATE_REPO first.' }, 404)
+  try {
+    await dispatchUpdate(c.env)
+    return c.json({ ok: true }, 202)
+  } catch (e) {
+    const status = e instanceof UpdateDispatchError ? e.status : 0
+    return c.json({ error: 'update_failed', message: `GitHub refused to start the update (${status || 'no answer'}). Check the token and repository.` }, 502)
+  }
+})
 
 api.get('/me', async (c) => {
   const row = await c.env.DB.prepare('SELECT 1 FROM vaults WHERE user_id = ?')

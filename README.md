@@ -342,6 +342,14 @@ The check runs on your Worker, not in your browser. It asks GitHub for the lates
 2. Click **Run workflow**, then **Run workflow** again.
 3. Cloudflare deploys the new version in a few minutes.
 
+*Optional: update from the app.* With two more settings, **About and updates** shows **Update now**, which runs the same workflow for you:
+
+1. On GitHub, open **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**. Give it a name and an expiry, choose **Only select repositories** and pick your `noteflare` repository, then under **Repository permissions** set **Actions** to **Read and write**. Generate it and copy it.
+2. In the Cloudflare dashboard, open **Workers & Pages → noteflare → Settings → Variables and Secrets** and add two values of type **Secret**: `GITHUB_UPDATE_TOKEN` with the token, and `GITHUB_UPDATE_REPO` with your repository as `owner/noteflare`.
+3. Reload NoteFlare. When a new version is out, click **Update now**; Cloudflare deploys it in a few minutes and NoteFlare offers to reload.
+
+The token stays in your Worker and is never sent to the browser. Only you, signed in through Cloudflare Access, can start an update; API tokens can't. The token can only run workflows in that one repository; delete it on GitHub to turn the button off.
+
 The update keeps the settings in your `wrangler.jsonc` (database id, Cloudflare Access values). If you changed the code yourself, your changes are kept where they don't overlap with the new version; where they do, the new version wins.
 
 Prefer a terminal? In a clone of your copy:

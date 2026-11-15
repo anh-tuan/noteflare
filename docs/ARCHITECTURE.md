@@ -123,6 +123,7 @@ A daily cron trigger deletes notes that have been in the trash for more than 30 
 - The version lives in `package.json`; `shared/version.ts` imports it into both the Worker and the app.
 - `GET /api/version` returns this version and the latest GitHub release of `UPDATE_CHECK_REPO` (default `homielab/noteflare`, `"off"` to disable). Only the Worker contacts GitHub, with no user data, cached for 6 hours in memory and Cloudflare's cache. `?refresh=1` skips the cache at most once a minute.
 - `CHANGELOG.md` is bundled into the app (`src/lib/updates.ts`) and parsed by `shared/release.ts`, which the release scripts share. After an update, the app compares the version with the one this browser last ran and offers the new release notes.
+- "Update now": with the secrets `GITHUB_UPDATE_TOKEN` and `GITHUB_UPDATE_REPO`, `GET /api/version` reports `canUpdate` to web-app sessions and `POST /api/update` (session only) asks GitHub to run `.github/workflows/update.yml` on the repository's default branch (`worker/updates.ts`). The token never leaves the Worker.
 - `bun run release` cuts a version from the changelog; the Release workflow publishes the tag as a GitHub release.
 
 ## Design choices

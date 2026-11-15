@@ -329,6 +329,14 @@ Việc kiểm tra chạy trên Worker của bạn, không phải trong trình du
 2. Nhấn **Run workflow**, rồi **Run workflow** lần nữa.
 3. Cloudflare deploy phiên bản mới sau vài phút.
 
+*Tuỳ chọn: cập nhật ngay trong app.* Thêm hai cài đặt nữa, mục **Giới thiệu và cập nhật** sẽ có nút **Cập nhật ngay**, chạy giúp bạn đúng workflow trên:
+
+1. Trên GitHub, mở **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**. Đặt tên và hạn dùng, chọn **Only select repositories** rồi chọn repository `noteflare` của bạn, sau đó ở **Repository permissions** đặt **Actions** thành **Read and write**. Tạo token và chép lại.
+2. Trong Cloudflare dashboard, mở **Workers & Pages → noteflare → Settings → Variables and Secrets** và thêm hai giá trị kiểu **Secret**: `GITHUB_UPDATE_TOKEN` là token vừa tạo, và `GITHUB_UPDATE_REPO` là repository của bạn dạng `owner/noteflare`.
+3. Tải lại NoteFlare. Khi có phiên bản mới, nhấn **Cập nhật ngay**; Cloudflare deploy sau vài phút và NoteFlare sẽ đề nghị tải lại.
+
+Token nằm trong Worker của bạn và không bao giờ được gửi tới trình duyệt. Chỉ bạn, khi đã đăng nhập qua Cloudflare Access, mới bắt đầu cập nhật được; API token thì không. Token chỉ chạy được workflow trong đúng repository đó; xoá token trên GitHub để tắt nút này.
+
 Bản cập nhật giữ nguyên cài đặt trong `wrangler.jsonc` của bạn (database id, giá trị Cloudflare Access). Nếu bạn đã tự sửa code, thay đổi của bạn được giữ ở những chỗ không trùng với phiên bản mới; chỗ nào trùng thì phiên bản mới thắng.
 
 Thích dùng terminal? Trong bản clone của bản sao:

@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from 'react'
-import { ArrowUpRight, Bug, CheckCircle2, CircleAlert, Code, Coffee, Loader2, RefreshCw, Sparkles } from 'lucide-react'
+import { ArrowUpRight, Bug, CheckCircle2, CircleAlert, Code, Coffee, Download, Loader2, RefreshCw, Sparkles } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Segmented } from '@/components/ui/segmented'
 import { useI18n } from '@/i18n'
+import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { relativeTime, shortDate } from '@/lib/time'
 import {
@@ -89,6 +91,17 @@ function UpdateStatus({ state, onCheck }: { state: UpdateState; onCheck: () => v
   const { t } = useI18n()
   const checking = state.status === 'checking' || state.status === 'idle'
   const info = state.status === 'done' ? state.info : null
+  const [updating, setUpdating] = useState<'no' | 'starting' | 'started'>('no')
+  const startUpdate = async () => {
+    setUpdating('starting')
+    try {
+      await api.startUpdate()
+      setUpdating('started')
+    } catch {
+      setUpdating('no')
+      toast.error(t('up.updateFailed'))
+    }
+  }
 
   let icon = <Loader2 className="size-5 animate-spin text-muted-foreground" />
   let title = t('up.checking')
@@ -107,6 +120,11 @@ function UpdateStatus({ state, onCheck }: { state: UpdateState; onCheck: () => v
     title = t('up.available', { v: info.latest.version })
     body = t('up.availableBody', { current: APP_VERSION })
     tone = 'accent'
+    if (updating === 'started') {
+      icon = <Loader2 className="size-5 animate-spin text-primary" />
+      title = t('up.updating')
+      body = t('up.updatingBody')
+    }
   } else if (info?.latest) {
     icon = <CheckCircle2 className="size-5 text-success" />
     title = t('up.latest')
@@ -138,11 +156,19 @@ function UpdateStatus({ state, onCheck }: { state: UpdateState; onCheck: () => v
           <div className="mt-3 flex flex-wrap gap-2">
             {info?.updateAvailable && info.latest && (
               <>
-                <Button size="sm" asChild>
-                  <a href={UPDATE_GUIDE_URL} target="_blank" rel="noopener noreferrer">
-                    {t('up.howTo')}
-                  </a>
-                </Button>
+                {info.canUpdate ? (
+                  updating !== 'started' && (
+                    <Button size="sm" disabled={updating === 'starting'} onClick={() => void startUpdate()}>
+                      {updating === 'starting' ? <Loader2 className="animate-spin" /> : <Download />} {t('up.updateNow')}
+                    </Button>
+                  )
+                ) : (
+                  <Button size="sm" asChild>
+                    <a href={UPDATE_GUIDE_URL} target="_blank" rel="noopener noreferrer">
+                      {t('up.howTo')}
+                    </a>
+                  </Button>
+                )}
                 <Button size="sm" variant="outline" asChild>
                   <a href={info.latest.url} target="_blank" rel="noopener noreferrer">
                     {t('up.viewRelease')} <ArrowUpRight />

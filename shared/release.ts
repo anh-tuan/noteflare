@@ -97,6 +97,8 @@ export interface VersionInfo {
   updateAvailable: boolean
   /** When the release information was fetched (ms since epoch), or null. */
   checkedAt: number | null
+  /** True when the signed-in owner can start the update from the app ("Update now"). */
+  canUpdate?: boolean
 }
 
 export interface LatestRelease {

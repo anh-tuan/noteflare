@@ -195,7 +195,7 @@ never sent automatically by browsers, so this is safe).
 | GET | `/health` | none | `{ "ok": true, "api": "v1", "version": "0.1.0" }` |
 | GET | `/openapi.json` | none | OpenAPI 3.1 description |
 | GET | `/me` | read | `{ email, hasVault, auth, scope, attachments }` |
-| GET | `/version` | read | `{ version, checkEnabled, latest, updateAvailable, checkedAt }`: this server's version and the newest release (`?refresh=1` skips the 6-hour cache) |
+| GET | `/version` | read | `{ version, checkEnabled, latest, updateAvailable, checkedAt }`: this server's version and the newest release (`?refresh=1` skips the 6-hour cache) `canUpdate` is always `false` for tokens: only the web app can start an update |
 | GET | `/vault` | read | KDF parameters and wrapped data key (needed to unlock) |
 | GET | `/notes?since=<ms>` | read | Notes with `updatedAt > since`, oldest first; `since=0` returns all |
 | GET | `/notes/index` | read | `[{ id, version }]` for every note |

@@ -65,6 +65,7 @@ export const api = {
   setup: (token: string, emails: string) =>
     req<{ ok: true; teamDomain: string }>('/setup', { method: 'POST', body: JSON.stringify({ token, emails }) }),
   me: () => req<MeResponse>('/me'),
+  startUpdate: () => req<{ ok: true }>('/update', { method: 'POST', body: '{}' }),
   version: (refresh = false) => req<VersionInfo>(refresh ? '/version?refresh=1' : '/version'),
   getVault: () => req<VaultRecord>('/vault'),
   putVault: (v: VaultRecord) => req<{ version: number }>('/vault', { method: 'PUT', body: JSON.stringify(v) }),

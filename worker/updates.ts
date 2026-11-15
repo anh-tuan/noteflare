@@ -7,6 +7,13 @@ export interface UpdateEnv {
    * upstream project; point it at your fork, or set "off" to disable the check.
    */
   UPDATE_CHECK_REPO?: string
+  /**
+   * Optional one-click update: a fine-grained GitHub token (this repository only,
+   * Actions: read and write), stored as a Worker secret, and the "owner/name" of the
+   * deployment's own repository. The token never leaves the Worker.
+   */
+  GITHUB_UPDATE_TOKEN?: string
+  GITHUB_UPDATE_REPO?: string
 }
 
 const DEFAULT_REPO = 'homielab/noteflare'
@@ -22,6 +29,44 @@ export function updateRepo(env: UpdateEnv): string | null {
   const v = (env.UPDATE_CHECK_REPO ?? DEFAULT_REPO).trim()
   if (!v || /^(off|false|no|0)$/i.test(v)) return null
   return REPO_RE.test(v) ? v : null
+}
+
+/** The repository "Update now" runs the update workflow in, or null when it isn't configured. */
+export function selfUpdateRepo(env: UpdateEnv): string | null {
+  const repo = env.GITHUB_UPDATE_REPO?.trim() ?? ''
+  return env.GITHUB_UPDATE_TOKEN?.trim() && REPO_RE.test(repo) ? repo : null
+}
+
+export class UpdateDispatchError extends Error {
+  constructor(readonly status: number) {
+    super(`GitHub answered ${status}`)
+  }
+}
+
+const UPDATE_WORKFLOW = 'update.yml'
+
+/**
+ * Starts .github/workflows/update.yml in the deployment's own repository, on its default
+ * branch. The workflow pulls the new release and pushes; Cloudflare then deploys it.
+ */
+export async function dispatchUpdate(env: UpdateEnv, fetcher: typeof fetch = fetch): Promise<void> {
+  const repo = selfUpdateRepo(env)
+  if (!repo) throw new UpdateDispatchError(0)
+  const headers = {
+    Accept: 'application/vnd.github+json',
+    Authorization: `Bearer ${env.GITHUB_UPDATE_TOKEN!.trim()}`,
+    'User-Agent': 'NoteFlare-update',
+    'X-GitHub-Api-Version': '2022-11-28',
+  }
+  const info = await fetcher(`https://api.github.com/repos/${repo}`, { headers })
+  if (!info.ok) throw new UpdateDispatchError(info.status)
+  const branch = ((await info.json()) as { default_branch?: unknown }).default_branch
+  const res = await fetcher(`https://api.github.com/repos/${repo}/actions/workflows/${UPDATE_WORKFLOW}/dispatches`, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ref: typeof branch === 'string' && branch ? branch : 'main' }),
+  })
+  if (!res.ok) throw new UpdateDispatchError(res.status)
 }
 
 /**

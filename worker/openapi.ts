@@ -132,6 +132,7 @@ export function openApiSpec(origin: string) {
                       checkEnabled: { type: 'boolean' },
                       updateAvailable: { type: 'boolean' },
                       checkedAt: { type: ['integer', 'null'], description: 'ms since epoch' },
+                      canUpdate: { type: 'boolean', description: 'The web app can start the update; always false for tokens' },
                       latest: {
                         type: ['object', 'null'],
                         properties: {
