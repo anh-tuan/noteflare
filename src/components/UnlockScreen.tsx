@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { useVault } from '@/lib/vault'
 import { UnsafeKdfError, WrongSecretError } from '@/lib/crypto'
 import { cipherNoise } from '@/lib/motion'
+import { ApiError } from '@/lib/api'
 import { preloadAfterLockScreen } from '@/lib/lazy'
 import { t as translate, useI18n } from '@/i18n'
 
@@ -72,7 +73,9 @@ function ErrorText({ children }: { children: ReactNode }) {
 function messageOf(e: unknown) {
   if (e instanceof WrongSecretError) return translate('unlock.wrongSecret')
   if (e instanceof UnsafeKdfError) return translate('unlock.unsafeKdf')
-  return translate('unlock.networkError')
+  // fetch fails with a TypeError when the network is down; ApiError is the server answering with an error.
+  if (e instanceof TypeError || e instanceof ApiError) return translate('unlock.networkError')
+  return translate('unlock.unexpectedError')
 }
 
 export function UnlockScreen() {
@@ -201,8 +204,11 @@ function LockedFlow() {
     setBusy(true)
     setError(null)
     try {
-      if (mode === 'pass') await unlock(pass)
-      else {
+      if (mode === 'pass') {
+        if (!pass) throw new InputError(t('unlock.enterPassphrase'))
+        await unlock(pass)
+      } else {
+        if (!code.trim()) throw new InputError(t('unlock.enterRecoveryCode'))
         if (next.length < MIN_PASSPHRASE) throw new InputError(t('unlock.newTooShort', { n: MIN_PASSPHRASE }))
         await recover(code, next)
       }

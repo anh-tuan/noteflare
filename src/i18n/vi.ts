@@ -52,6 +52,9 @@ export const vi: Record<MessageKey, string> = {
   'unlock.wrongSecret': 'Passphrase hoặc mã khôi phục không đúng.',
   'unlock.unsafeKdf': 'Máy chủ gửi tham số khoá không an toàn nên NoteFlare từ chối mở khoá.',
   'unlock.networkError': 'Có lỗi khi kết nối máy chủ. Thử lại sau ít phút.',
+  'unlock.enterPassphrase': 'Hãy nhập passphrase.',
+  'unlock.enterRecoveryCode': 'Hãy nhập mã khôi phục.',
+  'unlock.unexpectedError': 'Đã có lỗi xảy ra. Hãy thử lại.',
   'unlock.offlineHint': 'Bạn đang offline. Mở khoá để đọc và sửa bản trên máy này; thay đổi sẽ đồng bộ khi có mạng.',
   'unlock.recoverOffline': 'Khôi phục bằng mã cần có mạng, vì passphrase mới được lưu trên máy chủ.',
 

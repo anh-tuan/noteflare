@@ -27,6 +27,7 @@ export function ChangePassphraseDialog({ open, onOpenChange }: { open: boolean; 
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
+    if (!current) return setError(t('unlock.enterPassphrase'))
     if (next.length < MIN_PASSPHRASE) return setError(t('unlock.newTooShort', { n: MIN_PASSPHRASE }))
     if (next !== confirm) return setError(t('pw.mismatch'))
     setBusy(true)

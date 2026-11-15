@@ -50,6 +50,9 @@ export const en = {
   'unlock.wrongSecret': "That passphrase or recovery code isn't right.",
   'unlock.unsafeKdf': 'The server sent unsafe key settings, so NoteFlare refused to unlock.',
   'unlock.networkError': "Couldn't reach the server. Try again in a few minutes.",
+  'unlock.enterPassphrase': 'Enter your passphrase.',
+  'unlock.enterRecoveryCode': 'Enter your recovery code.',
+  'unlock.unexpectedError': 'Something went wrong. Try again.',
   'unlock.offlineHint': "You're offline. Unlock to read and edit the copy on this device; changes sync when you're back online.",
   'unlock.recoverOffline': 'Recovering with a code needs a connection, because the new passphrase is saved on the server.',
 
