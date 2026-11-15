@@ -4,6 +4,18 @@ All notable changes to NoteFlare are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-15
+
+### Changed
+
+- Signing out now clears everything NoteFlare kept on this device, and signs out your other open tabs too.
+- Auto-lock also counts the time your device was asleep, so your notes are locked when you come back.
+
+### Fixed
+
+- Opening a note dims the whole page again, header included, and the note grows smoothly into the editor.
+- Pressing Unlock with an empty passphrase now asks for it instead of blaming the server.
+
 ## [0.1.0] - 2026-11-14
 
 First public release.
@@ -71,5 +83,6 @@ First public release.
 - One-click Deploy to Cloudflare button; D1 is created automatically.
 - Runs on the Workers and D1 free tiers.
 
-[Unreleased]: https://github.com/homielab/noteflare/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/homielab/noteflare/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/homielab/noteflare/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/homielab/noteflare/releases/tag/v0.1.0
