@@ -4,6 +4,8 @@ All notable changes to NoteFlare are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-15
+
 ### Added
 
 - A new deployment now sets up its own Cloudflare login: paste a Cloudflare API token on the first screen instead of configuring Zero Trust and editing files.
@@ -87,6 +89,7 @@ First public release.
 - One-click Deploy to Cloudflare button; D1 is created automatically.
 - Runs on the Workers and D1 free tiers.
 
-[Unreleased]: https://github.com/homielab/noteflare/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/homielab/noteflare/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/homielab/noteflare/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/homielab/noteflare/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/homielab/noteflare/releases/tag/v0.1.0
