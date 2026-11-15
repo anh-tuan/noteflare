@@ -233,6 +233,32 @@ The token only works for the Cloudflare account NoteFlare runs in, so nobody els
 1. Choose a passphrase. This is what encrypts your notes.
 2. Write down the **recovery code** and keep it somewhere safe, away from your passphrase.
 
+### With an AI agent
+
+Have a coding agent with terminal access (Claude Code, Codex, Gemini CLI…) deploy it for you. First create a deploy token: Cloudflare dashboard → **My Profile → API Tokens → Create Token → Create Custom Token**, with these permissions:
+
+| Permission | Why |
+| --- | --- |
+| Account → **Workers Scripts** → Edit | Upload the Worker, its files and its daily trash cleanup, and turn on its `workers.dev` link |
+| Account → **D1** → Edit | Create the `noteflare` database and apply its migrations |
+| Account → **Workers R2 Storage** → Edit | Only if you turned on image attachments in `wrangler.jsonc` |
+
+Limit **Account Resources** to your account. Your account ID is on the dashboard home page (**Account ID**, under the account menu). Then clone this repository, open the agent in its folder and paste:
+
+```text
+Deploy NoteFlare from this folder to my Cloudflare account.
+
+1. Read README.md, docs/ARCHITECTURE.md and wrangler.jsonc first.
+2. I need Bun (https://bun.sh) and Node 20+. Check `bun --version` and `node --version`; tell me if one is missing.
+3. Ask me to create a file named `.env` in this folder myself, with these two lines:
+   CLOUDFLARE_ACCOUNT_ID=<my account ID>
+   CLOUDFLARE_API_TOKEN=<my deploy token>
+   Never ask me to paste the token in the chat, never print, log or commit it, and never pass it as a command argument. `.env` is in .gitignore and Wrangler reads it on its own; check that `git status` does not list it.
+4. Keep the Worker name `noteflare` and the database name `noteflare`. Do not change any other value in wrangler.jsonc.
+5. Run `bun install`, then `bun run deploy` (build, deploy the Worker and create the D1 database, apply migrations). If it fails, show me the error and how to fix it.
+6. Give me the `https://noteflare.<subdomain>.workers.dev` link from the deploy output. Tell me to open it and finish on the "Finish setting up NoteFlare" screen (README, Deploy, Part 2 and Part 3), then delete `.env` and the deploy token.
+```
+
 ### Command line
 
 Requires [Bun](https://bun.sh), Node 20+ and a Cloudflare account.

@@ -221,6 +221,33 @@ Token chỉ dùng được với tài khoản Cloudflare đang chạy NoteFlare,
 1. Chọn một passphrase. Đây là thứ mã hoá ghi chú của bạn.
 2. Ghi lại **mã khôi phục** và cất ở nơi an toàn, tách khỏi passphrase.
 
+### Nhờ AI agent
+
+Để một coding agent có quyền dùng terminal (Claude Code, Codex, Gemini CLI…) deploy giúp bạn. Trước tiên tạo một deploy token: Cloudflare dashboard → **My Profile → API Tokens → Create Token → Create Custom Token**, với các quyền:
+
+| Quyền | Để làm gì |
+| --- | --- |
+| Account → **Workers Scripts** → Edit | Tải Worker, các file và lịch dọn thùng rác hằng ngày lên, bật link `workers.dev` |
+| Account → **D1** → Edit | Tạo database `noteflare` và chạy migration |
+| Account → **Workers R2 Storage** → Edit | Chỉ khi bạn bật đính kèm ảnh trong `wrangler.jsonc` |
+
+Giới hạn **Account Resources** vào tài khoản của bạn. Account ID nằm ở trang chủ dashboard (**Account ID**, trong menu tài khoản). Rồi clone repo này, mở agent trong thư mục của nó và dán:
+
+```text
+Deploy NoteFlare from this folder to my Cloudflare account.
+
+1. Read README.md, docs/ARCHITECTURE.md and wrangler.jsonc first.
+2. I need Bun (https://bun.sh) and Node 20+. Check `bun --version` and `node --version`; tell me if one is missing.
+3. Ask me to create a file named `.env` in this folder myself, with these two lines:
+   CLOUDFLARE_ACCOUNT_ID=<my account ID>
+   CLOUDFLARE_API_TOKEN=<my deploy token>
+   Never ask me to paste the token in the chat, never print, log or commit it, and never pass it as a command argument. `.env` is in .gitignore and Wrangler reads it on its own; check that `git status` does not list it.
+4. Keep the Worker name `noteflare` and the database name `noteflare`. Do not change any other value in wrangler.jsonc.
+5. Run `bun install`, then `bun run deploy` (build, deploy the Worker and create the D1 database, apply migrations). If it fails, show me the error and how to fix it.
+6. Give me the `https://noteflare.<subdomain>.workers.dev` link from the deploy output. Tell me to open it and finish on the "Finish setting up NoteFlare" screen (README, Deploy, Part 2 and Part 3), then delete `.env` and the deploy token.
+7. Talk to me in Vietnamese.
+```
+
 ### Dòng lệnh
 
 ```bash

@@ -7,6 +7,7 @@ All notable changes to NoteFlare are recorded here. The format follows [Keep a C
 ### Added
 
 - Portuguese (Brazil) interface.
+- Deploy with an AI coding agent: paste the prompt from the README into Claude Code, Codex or a similar tool.
 
 ## [0.3.0] - 2026-11-15
 
