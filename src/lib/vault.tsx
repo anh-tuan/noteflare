@@ -4,6 +4,7 @@ import { api, ApiError } from './api'
 import { localStore } from './sync/localStore'
 import { keepOfflineCopy } from './pwa'
 import { transition } from './motion'
+import { watchIdle } from './idleLock'
 import { createVault, rewrapVault, unlockWithPassphrase, unlockWithRecovery } from './crypto'
 
 const IDLE_LOCK_MS = 15 * 60 * 1000
@@ -112,17 +113,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   // Auto-lock when idle.
   useEffect(() => {
     if (status !== 'unlocked') return
-    let timer = window.setTimeout(lock, IDLE_LOCK_MS)
-    const reset = () => {
-      window.clearTimeout(timer)
-      timer = window.setTimeout(lock, IDLE_LOCK_MS)
-    }
-    const events = ['pointerdown', 'keydown', 'wheel', 'touchstart'] as const
-    events.forEach((e) => window.addEventListener(e, reset, { passive: true }))
-    return () => {
-      window.clearTimeout(timer)
-      events.forEach((e) => window.removeEventListener(e, reset))
-    }
+    return watchIdle(IDLE_LOCK_MS, lock)
   }, [status, lock])
 
   const setup = useCallback(async (passphrase: string) => {
