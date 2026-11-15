@@ -58,6 +58,7 @@ D1 holds the data in these tables (plus `settings` for the app's own setup).
 - **`vaults`**, one row per user: Argon2id salt and parameters, the data key wrapped by the passphrase key, and the data key wrapped by the recovery key.
 - **`notes`**, keyed by user and note id: `ciphertext` and `iv`, plus the plaintext fields the server needs to sort and filter (`pinned`, `archived`, `trashed_at`, `position`), a `version` counter and timestamps.
 - **`passkeys`**: per user, the credential id, a name, the PRF salt and one more wrapped copy of the data key.
+- **`shares`**: read-only links to one note. Per link: a random id, the note id, the snapshot's `ciphertext` and `iv`, an expiry and a timestamp. The snapshot is `{ title, body }` encrypted with AES-256-GCM under a fresh key per link (additional data `share:<id>`); the key exists only in the link's `#fragment`.
 - **`api_tokens`**: token name, scope, prefix, SHA-256 hash, expiry and last use. The token itself is never stored.
 
 Inside a note's ciphertext is JSON: `{ title, body, color, labels }`. See [SECURITY.md](../SECURITY.md) for exactly what is and isn't visible to the server.
@@ -81,6 +82,8 @@ The same API is mounted twice:
 - **`/api/v1`** is for everything else. It accepts only `Authorization: Bearer nf_…` tokens, never cookies, and allows any origin (CORS `*`). Tokens can't change the vault or manage tokens.
 
 POST requests must be `application/json`, which blocks simple cross-site form posts. Every API response is `Cache-Control: no-store`.
+
+Shared links are the only public routes: `GET /s/<id>` serves a self-contained page (inline script and style under a nonce CSP, no app code) that fetches `GET /api/share/<id>` and decrypts it with the key from the fragment. The web app manages links through `/api/shares` (session only). A link stops working when revoked, expired, or when its note is trashed or deleted.
 
 In production Cloudflare Access sits in front of the whole Worker. For `/api/v1` you either add a Bypass policy (the token is then the only gate) or use Access service tokens; the README covers both.
 
@@ -113,7 +116,7 @@ The manifest declares a `share_target` (GET, so shares pass through Cloudflare A
 
 ## Scheduled work
 
-A daily cron trigger deletes notes that have been in the trash for more than 30 days. With the `ATTACHMENTS` R2 binding, it then writes each user's encrypted backup (`worker/backups.ts`, the same file the app exports) to `backups/<email>/<date>.json` and keeps the newest 14.
+A daily cron trigger deletes notes that have been in the trash for more than 30 days. With the `ATTACHMENTS` R2 binding, it then writes each user's encrypted backup (`worker/backups.ts`, the same file the app exports) to `backups/<email>/<date>.json` and keeps the newest 14. It also deletes expired shared links and links whose note no longer exists.
 
 ## Versions and updates
 

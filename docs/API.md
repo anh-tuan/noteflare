@@ -209,6 +209,8 @@ never sent automatically by browsers, so this is safe).
 | GET | `/backups` | read | `{ "backups": [{ "date": "2026-11-16", "size": 12345 }] }`, newest first; empty without the R2 binding |
 | GET | `/backups/{date}` | read | One daily backup (`YYYY-MM-DD`): the encrypted JSON file the app exports. `501` without the R2 binding |
 
+Shared links are managed by the web app only (`/api/shares`, Access session; tokens get `403`). Their public side, `GET /api/share/{id}`, needs no auth and returns only `{ ciphertext, iv, expiresAt }`, or `404` when the link is revoked, expired or its note is in the trash.
+
 A note as stored on the server:
 
 ```json

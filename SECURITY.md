@@ -47,6 +47,7 @@ NoteFlare is pre-1.0. Only the latest release on `main` gets security fixes, so 
 - **Remote images in your own notes.** `![](https://…)` in a note loads that image when the note is shown, which tells the image's host your IP address. Images are fetched without a referrer, but avoid remote images in sensitive notes.
 - **Exports you download.** A Markdown export is plain text and decrypted images. The encrypted backup stays encrypted, but anyone holding it can try passphrases offline, like a copy of the database.
 - **Someone else finishing a new deployment's setup.** Until its login exists, NoteFlare's first screen accepts a Cloudflare API token to create it. The token is accepted only if it can read a random code kept in this deployment's D1 database; the code never leaves the Worker, so a token for another account can't finish the setup. The token is used once and never stored.
+- **Anyone holding a shared link.** A shared link carries its own key after `#`, so whoever has the whole link can read that snapshot of the note until it expires or you revoke it. Send links only to people you trust; revoke them when they are no longer needed. The key never reaches the server, the share page loads no scripts or images from elsewhere and sends no referrer, but a link pasted into a chat or a browser history is readable by whoever sees it there.
 - **Abuse by people you let in.** NoteFlare has no per-user quotas. Anyone your Access policy (and `ALLOWED_EMAILS`) admits can store notes until the D1 free tier runs out, so keep the policy narrow.
 
 ### What the server can and can't see
@@ -60,6 +61,7 @@ NoteFlare is pre-1.0. Only the latest release on `main` gets security fixes, so 
 | Argon2id salt and parameters, wrapped (encrypted) keys | Your passphrase, recovery code and data key |
 | Passkey names, credential ids and PRF salts | The secret each passkey's PRF returns |
 | API token names, scopes, prefixes and last-used times (token values are stored only as SHA-256 hashes) | |
+| Shared links: which note each one points to, when it was created and expires | The shared snapshot (title and text) and its key |
 | Request IPs and times, as for any Cloudflare Worker | |
 
 The Worker makes one kind of outbound request: every few hours it asks the GitHub API for the latest NoteFlare release, so the app can show an update notice. The request contains no user data. Set `UPDATE_CHECK_REPO` to `"off"` to disable it.
@@ -82,6 +84,7 @@ Tokens are accepted only on `/api/v1`, never as cookies, so they can't be used f
 - [ ] `ALLOWED_EMAILS` lists the same email(s) as a second lock.
 - [ ] `DEV_USER_EMAIL` is not set in production (it's ignored there, but there's no reason to set it).
 - [ ] If `/api/v1` uses a Bypass policy, add a Cloudflare rate-limiting rule for `/api/v1/*` (one rule is available on the free plan).
+- [ ] Only `/s/*` and `/api/share/*` are public (Bypass) for shared links; everything else stays behind your Access policy. Revoke shared links you no longer need.
 - [ ] Tokens have an expiry and the narrowest scope that works; revoke the ones you no longer use.
 - [ ] Your passphrase is long (a sentence of 5+ words), and the recovery code is stored somewhere separate from it.
 - [ ] You pull releases regularly; **About and updates** in the app tells you when one is out.

@@ -8,6 +8,8 @@ import type {
   MeResponse,
   PutNoteBody,
   PasskeyRecord,
+  CreateShareBody,
+  ShareInfo,
   VaultRecord,
 } from '../../shared/types'
 import type { VersionInfo } from '../../shared/release'
@@ -67,6 +69,9 @@ export const api = {
   getVault: () => req<VaultRecord>('/vault'),
   putVault: (v: VaultRecord) => req<{ version: number }>('/vault', { method: 'PUT', body: JSON.stringify(v) }),
   addPasskey: (p: Omit<PasskeyRecord, 'createdAt'>) => req<PasskeyRecord>('/passkeys', { method: 'POST', body: JSON.stringify(p) }),
+  listShares: () => req<ShareInfo[]>('/shares'),
+  createShare: (body: CreateShareBody) => req<ShareInfo>('/shares', { method: 'POST', body: JSON.stringify(body) }),
+  revokeShare: (id: string) => req<void>(`/shares/${id}`, { method: 'DELETE' }),
   removePasskey: (id: string) => req<void>(`/passkeys/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   listNotes: (since = 0) => req<EncryptedNote[]>(`/notes?since=${since}`),
   noteIndex: () => req<{ id: string; version: number }[]>('/notes/index'),

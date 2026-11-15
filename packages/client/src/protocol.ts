@@ -118,3 +118,33 @@ export const BATCH_MAX_BYTES = 8 * 1024 * 1024
 export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
 /** Image types clients accept; anything else is refused on upload and never rendered. */
 export const ATTACHMENT_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/avif'] as const
+
+// ---------------------------------------------------------------- shared links
+
+/** A read-only link to a snapshot of one note. The key is only in the link's #fragment. */
+export interface ShareInfo {
+  id: string // base64url, 22 chars
+  noteId: string
+  expiresAt: number | null
+  createdAt: number
+}
+
+export interface CreateShareBody {
+  id: string
+  noteId: string
+  ciphertext: string // base64, AES-GCM of {title, body}, AAD "share:<id>"
+  iv: string // base64
+  /** Days until it stops working; null = never. */
+  days: 1 | 7 | 30 | null
+}
+
+/** What the public share endpoint returns: ciphertext only. */
+export interface SharedNote {
+  ciphertext: string
+  iv: string
+  expiresAt: number | null
+}
+
+export const SHARE_DAYS = [1, 7, 30, null] as const
+export const MAX_SHARES_PER_USER = 200
+export const SHARE_ID_RE = /^[A-Za-z0-9_-]{22}$/

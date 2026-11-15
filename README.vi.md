@@ -40,6 +40,7 @@ App ghi chú đơn giản, riêng tư, không cần máy chủ — mã hoá đ�
 - ⚡ **Cập nhật tức thì**: sửa trên một thiết bị, các thiết bị khác đang mở thấy ngay, không cần tải lại.
 - 🗝️ **Mã khôi phục**: quên passphrase vẫn không mất ghi chú; đổi passphrase không cần mã hoá lại.
 - 👆 **Mở khoá bằng passkey**: Face ID, Touch ID, Windows Hello hoặc khoá bảo mật thay cho gõ passphrase, vẫn mã hoá đầu-cuối.
+- 🔗 **Chia sẻ ghi chú bằng liên kết**: gửi một bản chỉ đọc của một ghi chú, mở được mà không cần đăng nhập. Bản này được mã hoá bằng khoá chỉ nằm trong liên kết, nên máy chủ không đọc được. Liên kết có thể hết hạn sau 1, 7 hoặc 30 ngày, và bạn thu hồi được bất cứ lúc nào.
 - 🔒 **Tự khoá**: khoá bị xoá khỏi bộ nhớ sau 15 phút không thao tác, hoặc chỉ với một cú nhấp.
 - ✍️ **Trình soạn Markdown biết giúp bạn**: danh sách và checklist tự nối dòng khi nhấn Enter, Tab để thụt lề, một chạm để biến các dòng thành checklist.
 - 🌗 **Sáng/tối, dạng lưới hoặc danh sách, dùng tốt trên điện thoại**, phím tắt (nhấn `?` để xem), tôn trọng chế độ giảm chuyển động.
@@ -111,6 +112,15 @@ Ghi chú có thể kèm ảnh, được mã hoá như mọi thứ khác. Tính n
 - PNG, JPEG, GIF, WebP và AVIF, mỗi ảnh tối đa 10 MB.
 - Xoá vĩnh viễn một ghi chú cũng xoá những ảnh chỉ ghi chú đó dùng. Ghi chú bị dọn khỏi thùng rác sau 30 ngày thì ảnh vẫn nằm lại trong bucket.
 - Lần đầu mỗi thiết bị hiển thị một ảnh cần có mạng.
+
+## 🔗 Chia sẻ ghi chú bằng liên kết
+
+Mở menu của ghi chú và chọn **Chia sẻ liên kết**. Chọn thời hạn (1 ngày, 7 ngày, 30 ngày hoặc không hết hạn), rồi **Tạo liên kết**: liên kết được sao chép sẵn cho bạn. Ai có liên kết đều đọc được ghi chú trên mọi trình duyệt, không cần đăng nhập.
+
+- Liên kết chứa bản sao tiêu đề và nội dung của ghi chú ở thời điểm tạo. Các chỉnh sửa sau đó, nhãn, màu và ảnh không được chia sẻ.
+- Ghi chú được mã hoá ngay trong trình duyệt của bạn bằng một khoá mới cho mỗi liên kết. Khoá là phần sau dấu `#`, phần mà trình duyệt không bao giờ gửi lên máy chủ, nên máy chủ của bạn chỉ lưu ciphertext. Ai có trọn liên kết đều đọc được ghi chú, nên chỉ gửi cho người bạn tin.
+- **Chia sẻ liên kết** cũng liệt kê các liên kết đang hoạt động của ghi chú; thu hồi ngay tại đó. Chuyển ghi chú vào thùng rác sẽ thu hồi mọi liên kết của nó, và liên kết hết hạn bị xoá mỗi đêm.
+- Chỉ trang chia sẻ (`/s/…`) và dữ liệu của nó (`/api/share/…`) là công khai; phần còn lại của NoteFlare vẫn nằm sau Cloudflare Access. Phần cài đặt trong app tự mở chúng; nếu bạn tự cài Access, xem bước 8 bên dưới.
 
 ## 📱 Cài lên điện thoại, dùng khi offline
 
@@ -295,6 +305,7 @@ Thay cho cách cài trong app ở Phần 2:
 
 6. Deploy lại. Trên GitHub, nhấn **Commit changes** và Cloudflare tự deploy lại sau vài phút. Với dòng lệnh, chạy `bun run deploy`.
 7. Mở link NoteFlare. Bạn sẽ thấy trang đăng nhập của Cloudflare, rồi tới NoteFlare.
+8. Tuỳ chọn, cho [liên kết chia sẻ](#-chia-sẻ-ghi-chú-bằng-liên-kết): tạo thêm một self-hosted application tên `NoteFlare shared links` với hai public hostname, là địa chỉ NoteFlare của bạn với path `s` và với path `api/share`, cùng một policy có action **Bypass** và include **Everyone**. Thiếu bước này, người nhận liên kết sẽ thấy trang đăng nhập của Cloudflare.
 
 Sau đó làm theo [checklist bảo mật](SECURITY.md#hardening-checklist-for-your-deployment).
 

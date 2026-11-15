@@ -56,7 +56,7 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return
   const url = new URL(req.url)
   if (url.origin !== self.location.origin) return
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/cdn-cgi/')) return
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/s/') || url.pathname.startsWith('/cdn-cgi/')) return
 
   if (req.mode === 'navigate') {
     event.respondWith(navigate(req, event.preloadResponse))

@@ -42,6 +42,7 @@ A simple, private, serverless notes app — end-to-end encrypted, completely fre
 - ⚡ **Instant updates**: an edit on one device shows up on your other open devices right away, without reloading.
 - 🗝️ **Recovery code**: forget your passphrase without losing your notes, and change it without re-encrypting anything.
 - 👆 **Unlock with a passkey**: Face ID, Touch ID, Windows Hello or a security key instead of typing your passphrase, still end-to-end encrypted.
+- 🔗 **Share a note by link**: send a read-only copy of one note that opens without signing in. It is encrypted with a key that lives only in the link, so the server can't read it. Links can expire after 1, 7 or 30 days, and you can revoke them any time.
 - 🔒 **Auto-lock**: keys are wiped from memory after 15 minutes idle or with one click.
 - ✍️ **A Markdown editor that helps**: lists and checklists continue when you press Enter, Tab indents, and one tap turns lines into a checklist.
 - 🌗 **Light and dark, grid or list, mobile-ready**, keyboard shortcuts (press `?` to see them) and reduced-motion support.
@@ -113,6 +114,15 @@ To turn it on, uncomment the `r2_buckets` line in `wrangler.jsonc` and deploy; t
 - PNG, JPEG, GIF, WebP and AVIF, up to 10 MB each.
 - Deleting a note forever also deletes the images only it used. Notes purged from the trash after 30 days leave their images in the bucket.
 - Images need a connection the first time each device shows them.
+
+## 🔗 Share a note by link
+
+Open a note's menu and choose **Share link**. Pick how long the link works (1 day, 7 days, 30 days or never), then **Create link**: it is copied for you. Anyone with the link can read the note in any browser, without signing in.
+
+- The link holds a copy of the note's title and text as they are now. Later edits, labels, colors and images are not shared.
+- The note is encrypted in your browser with a new key for each link. The key is the part after `#`, which browsers never send to a server, so your server only stores ciphertext. Anyone who has the whole link can read the note, so send it only to people you trust.
+- **Share link** also lists the note's active links; revoke one there. Moving the note to the trash revokes all its links, and expired links are deleted every night.
+- Only the share page (`/s/…`) and its data (`/api/share/…`) are public; the rest of NoteFlare stays behind Cloudflare Access. The in-app setup opens them for you; if you set up Access by hand, see step 8 below.
 
 ## 📱 Install on your phone, use it offline
 
@@ -308,6 +318,7 @@ Instead of the in-app setup in Part 2:
 
 6. Deploy again. On GitHub, click **Commit changes** and Cloudflare redeploys by itself in a few minutes. On the command line, run `bun run deploy`.
 7. Open your NoteFlare link. You should now see the Cloudflare login page, then NoteFlare.
+8. Optional, for [shared links](#-share-a-note-by-link): create a second self-hosted application named `NoteFlare shared links` with two public hostnames, your NoteFlare address with path `s` and with path `api/share`, and a policy with action **Bypass** and include **Everyone**. Without it, people you share a link with see the Cloudflare login page.
 
 Then run through the [hardening checklist](SECURITY.md#hardening-checklist-for-your-deployment).
 

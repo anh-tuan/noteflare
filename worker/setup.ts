@@ -291,6 +291,21 @@ export async function runSetup(store: SettingsStore, host: string, token: string
           policies: [{ name: 'Public', decision: 'bypass', include: [{ everyone: {} }], precedence: 1 }],
         },
       }).catch(() => {})
+      // Shared note links: the page and its ciphertext endpoint are public, the key is in the link.
+      await cf(`/accounts/${account}/access/apps`, {
+        method: 'POST',
+        body: {
+          name: 'NoteFlare shared links',
+          type: 'self_hosted',
+          domain: `${host}/s`,
+          destinations: [
+            { type: 'public', uri: `${host}/s` },
+            { type: 'public', uri: `${host}/api/share` },
+          ],
+          app_launcher_visible: false,
+          policies: [{ name: 'Public', decision: 'bypass', include: [{ everyone: {} }], precedence: 1 }],
+        },
+      }).catch(() => {})
     }
 
     await store.set({ [K.team]: `https://${domain}`, [K.aud]: app.aud, [K.emails]: emails.join(',') })

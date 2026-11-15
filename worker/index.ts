@@ -7,16 +7,22 @@ import { openApiSpec } from './openapi'
 import { backupKey, isBackupDate, listBackups, runScheduledBackups, toNote, toVault, type NoteRow, type VaultRow } from './backups'
 import { versionInfo, type UpdateEnv } from './updates'
 import { notifyLive } from './live'
+import { publicShare, purgeShares, revokeNoteShares, sharePage, sharePageHeaders, toShareInfo, type ShareRow } from './shares'
 import {
   BATCH_MAX_BYTES,
   BATCH_MAX_NOTES,
   MAX_ATTACHMENT_BYTES,
   MAX_PASSKEYS,
+  MAX_SHARES_PER_USER,
+  SHARE_DAYS,
+  SHARE_ID_RE,
   MAX_TOKENS_PER_USER,
   type BatchNoteItem,
   type BatchResult,
   type CreateTokenBody,
   type CreateTokenResponse,
+  type CreateShareBody,
+  type ShareInfo,
   type EncryptedNote,
   type MeResponse,
   type PasskeyRecord,
@@ -330,6 +336,8 @@ api.put('/notes/:id', needWrite, async (c) => {
           .bind(body.ciphertext, body.iv, ...flags, now, user, id, body.baseVersion)
           .run()
 
+  // A note moved to the trash stops being shared; restoring it doesn't bring its links back.
+  if (res.meta.changes && body.trashedAt !== null) await revokeNoteShares(c.env.DB, user, id)
   const row = await getNote(c.env.DB, user, id)
   if (!res.meta.changes) {
     // Conflict: return the current server copy so the client can resolve it.
@@ -387,8 +395,68 @@ api.delete('/notes/:id', needWrite, async (c) => {
     .bind(c.get('user'), id)
     .run()
   if (!res.meta.changes) return c.json({ error: 'not_found' }, 404)
+  await revokeNoteShares(c.env.DB, c.get('user'), id)
   notifyLive(c.env, c.executionCtx, c.get('user'), [{ id, version: 0 }])
   return c.body(null, 204)
+})
+
+// ---------- Shared links (web app only; the public side is /api/share/:id and /s/:id) ----------
+
+api.get('/shares', sessionOnly, async (c) => {
+  const { results } = await c.env.DB.prepare(
+    `SELECT id, note_id, expires_at, created_at FROM shares
+     WHERE user_id = ? AND (expires_at IS NULL OR expires_at > ?) ORDER BY created_at DESC`,
+  )
+    .bind(c.get('user'), Date.now())
+    .all<ShareRow>()
+  return c.json<ShareInfo[]>((results ?? []).map(toShareInfo))
+})
+
+api.post('/shares', sessionOnly, async (c) => {
+  const body = await c.req.json<CreateShareBody>().catch(() => null)
+  if (
+    !body ||
+    typeof body.id !== 'string' ||
+    !SHARE_ID_RE.test(body.id) ||
+    typeof body.noteId !== 'string' ||
+    !ID_RE.test(body.noteId) ||
+    !isB64(body.ciphertext, MAX_CIPHERTEXT) ||
+    !isB64(body.iv, 24) ||
+    !(SHARE_DAYS as readonly unknown[]).includes(body.days)
+  ) {
+    return c.json({ error: 'bad_request' }, 400)
+  }
+  const user = c.get('user')
+  const note = await getNote(c.env.DB, user, body.noteId)
+  if (!note || note.trashed_at !== null) return c.json({ error: 'not_found' }, 404)
+  const count = await c.env.DB.prepare('SELECT COUNT(*) AS n FROM shares WHERE user_id = ?').bind(user).first<{ n: number }>()
+  if ((count?.n ?? 0) >= MAX_SHARES_PER_USER) {
+    return c.json({ error: 'too_many_shares', message: `Revoke a link first (limit ${MAX_SHARES_PER_USER}).` }, 409)
+  }
+  const now = Date.now()
+  const row: ShareRow = {
+    id: body.id,
+    note_id: body.noteId,
+    ciphertext: body.ciphertext,
+    iv: body.iv,
+    expires_at: body.days ? now + body.days * DAY_MS : null,
+    created_at: now,
+  }
+  const res = await c.env.DB.prepare(
+    `INSERT INTO shares (id, user_id, note_id, ciphertext, iv, expires_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING`,
+  )
+    .bind(row.id, user, row.note_id, row.ciphertext, row.iv, row.expires_at, row.created_at)
+    .run()
+  if (!res.meta.changes) return c.json({ error: 'conflict' }, 409)
+  return c.json<ShareInfo>(toShareInfo(row), 201)
+})
+
+api.delete('/shares/:id', sessionOnly, async (c) => {
+  const res = await c.env.DB.prepare('DELETE FROM shares WHERE user_id = ? AND id = ?')
+    .bind(c.get('user'), c.req.param('id') ?? '')
+    .run()
+  return res.meta.changes ? c.body(null, 204) : c.json({ error: 'not_found' }, 404)
 })
 
 // ---------- API tokens (web app only) ----------
@@ -597,6 +665,22 @@ app.post('/api/setup', async (c) => {
   }
 })
 
+// ---------- Public shared links ----------
+// The only routes open to anyone: ciphertext of one shared note, and the page that decrypts it.
+// The key is in the link's #fragment, which never reaches this server.
+
+app.get('/api/share/:id', async (c) => {
+  c.header('Cache-Control', 'no-store')
+  const id = c.req.param('id')
+  const shared = SHARE_ID_RE.test(id) ? await publicShare(c.env.DB, id).catch(() => null) : null
+  return shared ? c.json(shared) : c.json({ error: 'not_found' }, 404)
+})
+
+app.get('/s/:id', (c) => {
+  const nonce = crypto.randomUUID().replace(/-/g, '')
+  return c.body(sharePage(nonce), 200, sharePageHeaders(nonce))
+})
+
 app.route('/api/v1', api)
 app.route('/api', api)
 app.all('/api/*', (c) => c.json({ error: 'not_found' }, 404))
@@ -642,6 +726,7 @@ export default {
     await env.DB.prepare('DELETE FROM notes WHERE trashed_at IS NOT NULL AND trashed_at < ?')
       .bind(Date.now() - TRASH_TTL_MS)
       .run()
+    await purgeShares(env.DB).catch(() => {}) // the shares table may not exist yet
     await runScheduledBackups(env)
   },
 } satisfies ExportedHandler<Env>
