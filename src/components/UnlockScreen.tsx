@@ -1,12 +1,13 @@
 import { maskEmail } from '@/lib/maskEmail'
 import { useEffect, useId, useMemo, useState, type FormEvent, type ReactNode } from 'react'
-import { CloudOff, Copy, Download, ExternalLink, KeyRound, LockKeyhole, ShieldCheck } from 'lucide-react'
+import { CloudOff, Copy, Download, ExternalLink, Fingerprint, KeyRound, LockKeyhole, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useVault } from '@/lib/vault'
 import { UnsafeKdfError, WrongSecretError } from '@/lib/crypto'
 import { cipherNoise } from '@/lib/motion'
+import { PasskeyCancelledError } from '@/lib/passkeys'
 import { api, ApiError, type SetupInfo } from '@/lib/api'
 import { preloadAfterLockScreen } from '@/lib/lazy'
 import { t as translate, useI18n } from '@/i18n'
@@ -293,7 +294,7 @@ class InputError extends Error {}
 
 function LockedFlow() {
   const { t } = useI18n()
-  const { email, unlock, recover, offline } = useVault()
+  const { email, unlock, recover, offline, passkeys, passkeySupport, unlockWithPasskey } = useVault()
   const [mode, setMode] = useState<'pass' | 'recover'>('pass')
   const [pass, setPass] = useState('')
   const [code, setCode] = useState('')
@@ -316,6 +317,17 @@ function LockedFlow() {
       }
     } catch (err) {
       setError(err instanceof InputError ? err.message : messageOf(err))
+      setBusy(false)
+    }
+  }
+
+  const withPasskey = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      await unlockWithPasskey()
+    } catch (err) {
+      if (!(err instanceof PasskeyCancelledError)) setError(t('unlock.passkeyFailed'))
       setBusy(false)
     }
   }
@@ -366,6 +378,12 @@ function LockedFlow() {
           <LockKeyhole />
           {busy ? t('unlock.decrypting') : mode === 'pass' ? t('unlock.unlock') : t('unlock.resetAndUnlock')}
         </Button>
+        {mode === 'pass' && passkeySupport && passkeys.length > 0 && (
+          <Button size="lg" type="button" variant="outline" disabled={busy} onClick={() => void withPasskey()}>
+            <Fingerprint />
+            {t('unlock.usePasskey')}
+          </Button>
+        )}
       </form>
       <div className="mt-6 flex items-center justify-between gap-4 text-sm">
         <span className="truncate text-muted-foreground">{email ? maskEmail(email) : null}</span>

@@ -17,7 +17,19 @@ export interface VaultRecord {
   wrappedDek: string // base64(iv || ciphertext)
   recoveryDek: string // base64(iv || ciphertext)
   version: number
+  /** Passkeys that can unlock the vault (WebAuthn PRF). Sent by GET /vault; ignored by PUT /vault. */
+  passkeys?: PasskeyRecord[]
 }
+
+export interface PasskeyRecord {
+  id: string // WebAuthn credential id, base64url
+  name: string
+  salt: string // base64, 32 bytes: the PRF input
+  wrappedDek: string // base64(iv || ciphertext)
+  createdAt: number
+}
+
+export const MAX_PASSKEYS = 10
 
 export interface EncryptedNote {
   id: string

@@ -41,6 +41,7 @@ A simple, private, serverless notes app — end-to-end encrypted, completely fre
 - 🔀 **Smart multi-device sync**: edits from two devices to the same note are merged line by line, like `git merge`. Only a true clash (same line, different text) becomes a separate copy.
 - ⚡ **Instant updates**: an edit on one device shows up on your other open devices right away, without reloading.
 - 🗝️ **Recovery code**: forget your passphrase without losing your notes, and change it without re-encrypting anything.
+- 👆 **Unlock with a passkey**: Face ID, Touch ID, Windows Hello or a security key instead of typing your passphrase, still end-to-end encrypted.
 - 🔒 **Auto-lock**: keys are wiped from memory after 15 minutes idle or with one click.
 - ✍️ **A Markdown editor that helps**: lists and checklists continue when you press Enter, Tab indents, and one tap turns lines into a checklist.
 - 🌗 **Light and dark, grid or list, mobile-ready**, keyboard shortcuts (press `?` to see them) and reduced-motion support.
@@ -121,7 +122,7 @@ NoteFlare is a Progressive Web App. Open your NoteFlare URL and sign in once, th
 - **iPhone / iPad (Safari)**: *Share → Add to Home Screen* (*Account menu → Install app* shows the steps)
 - **Desktop (Chrome, Edge)**: the install icon in the address bar, or *Account menu → Install app*
 
-**What works offline**: opening the app, unlocking with your passphrase, reading, searching, writing, editing, pinning, archiving, deleting and importing. The header shows *Offline · N unsynced* until everything has reached your Worker. Setting up a new account and recovering with a recovery code need a connection.
+**What works offline**: opening the app, unlocking with your passphrase or a passkey, reading, searching, writing, editing, pinning, archiving, deleting and importing. The header shows *Offline · N unsynced* until everything has reached your Worker. Setting up a new account and recovering with a recovery code need a connection.
 
 **Once installed**:
 
@@ -179,11 +180,13 @@ Tokens reach only the encrypted copy: a client still needs your passphrase to re
 ```
 passphrase    ──Argon2id (64 MiB, t=3)──► KEK  ──AES-GCM wrap──► wrappedDek   ┐
 recovery code ──HKDF-SHA256─────────────► RKEK ──AES-GCM wrap──► recoveryDek  ├─ stored in D1
+passkey PRF   ──HKDF-SHA256─────────────► PKEK ──AES-GCM wrap──► passkey copy │  (one per passkey)
 random 256-bit DEK ──AES-GCM, AAD = "note:<id>"──► note ciphertext            ┘
                    ──AES-GCM, AAD = "blob:<id>"──► image ciphertext (R2, optional)
 ```
 
 - Your passphrase, the data key (DEK) and note content never leave the browser unencrypted. Titles, bodies, labels and colors are all inside the ciphertext; only `pinned`, `archived`, `trashed_at`, `position` and timestamps are plaintext so notes can be sorted.
+- **Passkeys** (Account → Unlock with passkey…): the WebAuthn PRF extension gives the browser a secret that only that passkey can produce, after Face ID, Touch ID or a PIN. It wraps one more copy of the DEK. The server stores that copy and the PRF salt, never the secret. Removing a passkey deletes its copy; the passphrase and recovery code keep working, and a changed passphrase doesn't affect passkeys. It needs a browser and passkey provider with PRF (recent Chrome, Edge and Safari with iCloud Keychain, Google Password Manager or Windows Hello); elsewhere the option is hidden.
 - In a session the DEK is a **non-extractable** `CryptoKey` kept in memory only. Locking discards it.
 - The offline copy on your device holds the same ciphertext and wrapped keys as the server. Signing out deletes it.
 - Each note's ciphertext is bound to its id, so the server can't swap content between notes.

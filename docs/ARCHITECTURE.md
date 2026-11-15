@@ -53,10 +53,11 @@ flowchart LR
 
 ## Data model
 
-D1 holds three tables.
+D1 holds the data in these tables (plus `settings` for the app's own setup).
 
 - **`vaults`**, one row per user: Argon2id salt and parameters, the data key wrapped by the passphrase key, and the data key wrapped by the recovery key.
 - **`notes`**, keyed by user and note id: `ciphertext` and `iv`, plus the plaintext fields the server needs to sort and filter (`pinned`, `archived`, `trashed_at`, `position`), a `version` counter and timestamps.
+- **`passkeys`**: per user, the credential id, a name, the PRF salt and one more wrapped copy of the data key.
 - **`api_tokens`**: token name, scope, prefix, SHA-256 hash, expiry and last use. The token itself is never stored.
 
 Inside a note's ciphertext is JSON: `{ title, body, color, labels }`. See [SECURITY.md](../SECURITY.md) for exactly what is and isn't visible to the server.
@@ -69,6 +70,8 @@ Inside a note's ciphertext is JSON: `{ title, body, color, labels }`. See [SECUR
 4. Unlocking reverses step 2 and imports the DEK as a non-extractable `CryptoKey`. Locking drops it.
 
 Changing the passphrase re-wraps the DEK; notes aren't touched.
+
+A passkey adds one more wrap (`src/lib/passkeys.ts`): after the passphrase unlocks an extractable DEK, the browser creates a passkey with the WebAuthn PRF extension, derives a key from its PRF output with HKDF, wraps the DEK and saves it with `POST /api/passkeys`. `GET /api/vault` returns the passkeys with the vault, so the device copy unlocks offline too. `DELETE /api/passkeys/:id` removes one. Both are session-only and not part of `/api/v1`'s public contract.
 
 ## Requests and auth
 

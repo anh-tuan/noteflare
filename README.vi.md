@@ -39,6 +39,7 @@ App ghi chú đơn giản, riêng tư, không cần máy chủ — mã hoá đ�
 - 🔀 **Đồng bộ nhiều thiết bị thông minh**: hai máy cùng sửa một ghi chú thì được gộp theo từng dòng, giống `git merge`. Chỉ khi sửa cùng một dòng khác nhau mới tách thành bản riêng.
 - ⚡ **Cập nhật tức thì**: sửa trên một thiết bị, các thiết bị khác đang mở thấy ngay, không cần tải lại.
 - 🗝️ **Mã khôi phục**: quên passphrase vẫn không mất ghi chú; đổi passphrase không cần mã hoá lại.
+- 👆 **Mở khoá bằng passkey**: Face ID, Touch ID, Windows Hello hoặc khoá bảo mật thay cho gõ passphrase, vẫn mã hoá đầu-cuối.
 - 🔒 **Tự khoá**: khoá bị xoá khỏi bộ nhớ sau 15 phút không thao tác, hoặc chỉ với một cú nhấp.
 - ✍️ **Trình soạn Markdown biết giúp bạn**: danh sách và checklist tự nối dòng khi nhấn Enter, Tab để thụt lề, một chạm để biến các dòng thành checklist.
 - 🌗 **Sáng/tối, dạng lưới hoặc danh sách, dùng tốt trên điện thoại**, phím tắt (nhấn `?` để xem), tôn trọng chế độ giảm chuyển động.
@@ -177,10 +178,12 @@ Token chỉ lấy được bản đã mã hoá: client vẫn cần passphrase c�
 ```
 passphrase    ──Argon2id (64 MiB, t=3)──► KEK  ──AES-GCM wrap──► wrappedDek   ┐
 mã khôi phục  ──HKDF-SHA256─────────────► RKEK ──AES-GCM wrap──► recoveryDek  ├─ lưu trong D1
+PRF passkey   ──HKDF-SHA256─────────────► PKEK ──AES-GCM wrap──► bản của passkey │  (mỗi passkey một bản)
 DEK ngẫu nhiên 256-bit ──AES-GCM, AAD = "note:<id>"──► ciphertext của note    ┘
 ```
 
 - Passphrase, khoá dữ liệu (DEK) và nội dung note không bao giờ rời trình duyệt ở dạng rõ. Chỉ `pinned`, `archived`, `trashed_at`, `position` và thời gian sửa là dạng rõ để sắp xếp.
+- **Passkey** (Tài khoản → Mở khoá bằng passkey…): phần mở rộng PRF của WebAuthn cho trình duyệt một bí mật chỉ passkey đó tạo ra được, sau khi qua Face ID, Touch ID hoặc PIN. Bí mật này bọc thêm một bản DEK. Máy chủ lưu bản đó và salt PRF, không bao giờ thấy bí mật. Xoá passkey là xoá bản của nó; passphrase và mã khôi phục vẫn dùng được, đổi passphrase không ảnh hưởng passkey. Cần trình duyệt và trình quản lý passkey hỗ trợ PRF (Chrome, Edge, Safari đời mới với iCloud Keychain, Trình quản lý mật khẩu của Google hoặc Windows Hello); nơi khác thì tuỳ chọn này bị ẩn.
 - Trong phiên làm việc, DEK là `CryptoKey` **non-extractable**, chỉ nằm trong RAM. Khoá là xoá nó đi.
 - Bản offline trên máy chỉ chứa ciphertext và khoá đã bọc giống máy chủ. Đăng xuất sẽ xoá nó.
 - Ciphertext mỗi note gắn với id của nó, máy chủ không tráo nội dung giữa các note được.

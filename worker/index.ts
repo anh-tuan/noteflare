@@ -11,6 +11,7 @@ import {
   BATCH_MAX_BYTES,
   BATCH_MAX_NOTES,
   MAX_ATTACHMENT_BYTES,
+  MAX_PASSKEYS,
   MAX_TOKENS_PER_USER,
   type BatchNoteItem,
   type BatchResult,
@@ -18,6 +19,7 @@ import {
   type CreateTokenResponse,
   type EncryptedNote,
   type MeResponse,
+  type PasskeyRecord,
   type PutNoteBody,
   type TokenScope,
   type VaultRecord,
@@ -140,7 +142,7 @@ api.get('/vault', async (c) => {
     .bind(c.get('user'))
     .first<VaultRow>()
   if (!row) return c.json({ error: 'not_found' }, 404)
-  return c.json<VaultRecord>(toVault(row))
+  return c.json<VaultRecord>({ ...toVault(row), passkeys: await listPasskeys(c.env.DB, c.get('user')) })
 })
 
 /** Create the vault (version = 0) or change the passphrase (version = current version). */
@@ -190,6 +192,69 @@ api.put('/vault', sessionOnly, async (c) => {
     .run()
   if (!res.meta.changes) return c.json({ error: 'conflict' }, 409)
   return c.json({ version: body.version + 1 })
+})
+
+// ---------- Passkeys ----------
+// Extra wrapped copies of the data key, one per passkey (WebAuthn PRF). The wrapping key
+// is derived in the browser from the passkey's PRF output; the server never sees it.
+
+interface PasskeyRow {
+  id: string
+  name: string
+  salt: string
+  wrapped_dek: string
+  created_at: number
+}
+
+const CREDENTIAL_ID_RE = /^[A-Za-z0-9_-]{16,1400}$/
+
+async function listPasskeys(db: D1Database, user: string): Promise<PasskeyRecord[]> {
+  try {
+    const { results } = await db
+      .prepare('SELECT id, name, salt, wrapped_dek, created_at FROM passkeys WHERE user_id = ? ORDER BY created_at')
+      .bind(user)
+      .all<PasskeyRow>()
+    return (results ?? []).map((r) => ({ id: r.id, name: r.name, salt: r.salt, wrappedDek: r.wrapped_dek, createdAt: r.created_at }))
+  } catch {
+    return [] // migration not applied yet: no passkeys
+  }
+}
+
+api.post('/passkeys', sessionOnly, async (c) => {
+  const body = await c.req.json<Partial<PasskeyRecord>>().catch(() => null)
+  const name = typeof body?.name === 'string' ? body.name.trim().slice(0, 64) : ''
+  if (
+    !body ||
+    typeof body.id !== 'string' ||
+    !CREDENTIAL_ID_RE.test(body.id) ||
+    !name ||
+    !isB64(body.salt, 64) ||
+    body.salt.length < 43 || // ≥ 32 bytes
+    !isB64(body.wrappedDek, 256)
+  ) {
+    return c.json({ error: 'bad_request' }, 400)
+  }
+  const user = c.get('user')
+  const count = await c.env.DB.prepare('SELECT COUNT(*) AS n FROM passkeys WHERE user_id = ?').bind(user).first<{ n: number }>()
+  if ((count?.n ?? 0) >= MAX_PASSKEYS) {
+    return c.json({ error: 'too_many_passkeys', message: `Remove a passkey first (limit ${MAX_PASSKEYS}).` }, 409)
+  }
+  const rec: PasskeyRecord = { id: body.id, name, salt: body.salt, wrappedDek: body.wrappedDek, createdAt: Date.now() }
+  const res = await c.env.DB.prepare(
+    `INSERT INTO passkeys (user_id, id, name, salt, wrapped_dek, created_at) VALUES (?, ?, ?, ?, ?, ?)
+     ON CONFLICT(user_id, id) DO NOTHING`,
+  )
+    .bind(user, rec.id, rec.name, rec.salt, rec.wrappedDek, rec.createdAt)
+    .run()
+  if (!res.meta.changes) return c.json({ error: 'conflict' }, 409)
+  return c.json(rec, 201)
+})
+
+api.delete('/passkeys/:id', sessionOnly, async (c) => {
+  const res = await c.env.DB.prepare('DELETE FROM passkeys WHERE user_id = ? AND id = ?')
+    .bind(c.get('user'), c.req.param('id') ?? '')
+    .run()
+  return res.meta.changes ? c.body(null, 204) : c.json({ error: 'not_found' }, 404)
 })
 
 // ---------- Live sync ----------

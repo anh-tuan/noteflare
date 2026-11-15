@@ -6,6 +6,7 @@ All notable changes to NoteFlare are recorded here. The format follows [Keep a C
 
 ### Added
 
+- Unlock with Face ID, Touch ID, Windows Hello or a security key: add a passkey from the Account menu; your passphrase keeps working.
 - Import your notes from Evernote, Simplenote and Standard Notes: drop the export file and every note arrives encrypted.
 - NoteFlare now speaks Spanish, French, German and Brazilian Portuguese, and picks your browser's language the first time.
 - Changes appear on your other open devices right away, without waiting or reloading.

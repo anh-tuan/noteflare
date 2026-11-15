@@ -1,11 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import type { VaultRecord } from '../../shared/types'
+import type { PasskeyRecord, VaultRecord } from '../../shared/types'
 import { api, ApiError } from './api'
 import { localStore } from './sync/localStore'
 import { keepOfflineCopy } from './pwa'
 import { transition } from './motion'
 import { watchIdle } from './idleLock'
-import { createVault, rewrapVault, unlockWithPassphrase, unlockWithRecovery } from './crypto'
+import { createVault, newPasskeySalt, rewrapVault, unlockWithPasskey as unwrapWithPasskey, unlockWithPassphrase, unlockWithRecovery, wrapDekForPasskey, WrongSecretError } from './crypto'
+import { createPasskey, getPasskeySecret, passkeysSupported } from './passkeys'
 
 const IDLE_LOCK_MS = 15 * 60 * 1000
 const SIGN_OUT_CHANNEL = 'noteflare:sign-out'
@@ -52,6 +53,14 @@ interface VaultState {
   /** Call once the user confirms they saved the recovery code. */
   finishSetup(): void
   unlock(passphrase: string): Promise<void>
+  /** This browser can unlock with a passkey (WebAuthn PRF). */
+  passkeySupport: boolean
+  /** Passkeys that can unlock this vault. */
+  passkeys: PasskeyRecord[]
+  unlockWithPasskey(): Promise<void>
+  /** Create a passkey on this device; the passphrase proves it's the owner and unwraps the key to copy. */
+  addPasskey(passphrase: string, name: string): Promise<void>
+  removePasskey(id: string): Promise<void>
   recover(code: string, newPassphrase: string): Promise<void>
   changePassphrase(current: string, next: string): Promise<void>
   lock(): void
@@ -67,7 +76,20 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const [offline, setOffline] = useState(false)
   const [attachments, setAttachments] = useState(false)
   const [dek, setDek] = useState<CryptoKey | null>(null)
+  const [passkeySupport, setPasskeySupport] = useState(false)
+  const [passkeys, setPasskeys] = useState<PasskeyRecord[]>([])
   const record = useRef<VaultRecord | null>(null)
+
+  /** Keep the vault record (and its passkeys) in memory and on this device for offline unlock. */
+  const keepRecord = useCallback(async (next: VaultRecord) => {
+    record.current = next
+    setPasskeys(next.passkeys ?? [])
+    await localStore.setVault(next)
+  }, [])
+
+  useEffect(() => {
+    void passkeysSupported().then(setPasskeySupport)
+  }, [])
   const pendingDek = useRef<CryptoKey | null>(null)
 
   useEffect(() => {
@@ -81,8 +103,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         setEmail(me.email)
         setAttachments(!!me.attachments)
         if (!me.hasVault) return setStatus('setup')
-        record.current = await api.getVault()
-        await localStore.setVault(record.current)
+        await keepRecord(await api.getVault())
         setStatus('locked')
       } catch (e) {
         if (e instanceof ApiError) {
@@ -95,6 +116,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         const vault = await localStore.getVault()
         if (cached?.email && vault) {
           record.current = vault
+          setPasskeys(vault.passkeys ?? [])
           setEmail(cached.email)
           setOffline(true)
           setStatus('locked')
@@ -103,7 +125,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         }
       }
     })()
-  }, [])
+  }, [keepRecord])
 
   const lock = useCallback(() => {
     setDek(null)
@@ -148,16 +170,56 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const unlockWithPasskey = useCallback(async () => {
+    const list = record.current?.passkeys ?? []
+    const { id, prf } = await getPasskeySecret(list)
+    const pk = list.find((p) => p.id === id)
+    if (!pk) throw new WrongSecretError()
+    const key = await unwrapWithPasskey(pk.wrappedDek, prf, id)
+    keepOfflineCopy()
+    transition(() => {
+      setDek(key)
+      setStatus('unlocked')
+    })
+  }, [])
+
+  const addPasskey = useCallback(
+    async (passphrase: string, name: string) => {
+      const latest = await api.getVault()
+      // Check the passphrase before creating anything on the device.
+      const copy = await unlockWithPassphrase(latest, passphrase, true)
+      const salt = newPasskeySalt()
+      const { id, prf } = await createPasskey(email ?? 'NoteFlare', salt)
+      const wrappedDek = await wrapDekForPasskey(copy, prf, id)
+      // Prove the new copy unwraps before saving it.
+      await unwrapWithPasskey(wrappedDek, prf, id)
+      const added = await api.addPasskey({ id, name, salt, wrappedDek })
+      await keepRecord({ ...latest, passkeys: [...(latest.passkeys ?? []).filter((p) => p.id !== id), added] })
+    },
+    [email, keepRecord],
+  )
+
+  const removePasskey = useCallback(
+    async (id: string) => {
+      await api.removePasskey(id).catch((e) => {
+        if (!(e instanceof ApiError && e.status === 404)) throw e // already gone: fine
+      })
+      const cur = record.current ?? (await api.getVault())
+      await keepRecord({ ...cur, passkeys: (cur.passkeys ?? []).filter((p) => p.id !== id) })
+    },
+    [keepRecord],
+  )
+
   const saveRewrap = useCallback(
     async (secret: { passphrase: string } | { recoveryCode: string }, next: string) => {
       record.current = await api.getVault() // always start from the latest copy before overwriting
       const res = await rewrapVault(record.current, secret, next)
       const { version } = await api.putVault(res.record)
-      record.current = { ...res.record, version }
-      await localStore.setVault(record.current)
+      // The data key is unchanged, so every passkey keeps working.
+      await keepRecord({ ...res.record, version })
       return res.dek
     },
-    [],
+    [keepRecord],
   )
 
   const recover = useCallback(
@@ -203,7 +265,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
   return (
     <VaultContext.Provider
-      value={{ status, email, offline, attachments, dek, setup, finishSetup, unlock, recover, changePassphrase, lock, signOut }}
+      value={{ status, email, offline, attachments, dek, setup, finishSetup, unlock, passkeySupport, passkeys, unlockWithPasskey, addPasskey, removePasskey, recover, changePassphrase, lock, signOut }}
     >
       {children}
     </VaultContext.Provider>

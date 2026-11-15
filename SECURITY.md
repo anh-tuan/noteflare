@@ -40,6 +40,7 @@ NoteFlare is pre-1.0. Only the latest release on `main` gets security fixes, so 
 - **A malicious build of the front end.** If whoever controls your deployment ships modified JavaScript, it can capture your passphrase. You run your own deployment, so this is you, but review changes you pull.
 - **Weak passphrases.** Argon2id slows guessing; it doesn't make "password1" safe.
 - **Metadata analysis.** See the table below.
+- **Someone who can use your unlocked device's passkeys.** A passkey unlocks NoteFlare like the passphrase does. Anyone who passes your device's Face ID, Touch ID or PIN, or your passkey provider's account (for synced passkeys), can unlock. Remove a passkey in NoteFlare when you lose that device.
 - **Losing both your passphrase and recovery code.** There is no backdoor, so there is no recovery.
 - **Offline guessing after a leak.** Anyone who gets the wrapped key and salt can try passphrases offline at Argon2id speed. That includes a leaked token (read or write), a copy of the database, or the offline copy on a lost device. A long passphrase makes this impractical; a short one doesn't. Treat tokens like a copy of your encrypted database.
 - **A malicious server rolling notes back or hiding them.** Encryption stops the server reading or forging content. It can still serve an older version of a note, withhold or delete notes, or change the unencrypted flags (pinned, archived, trashed), which could send a note to the trash to be purged. Keep exports (`noteflare export`) of anything you can't lose.
@@ -57,6 +58,7 @@ NoteFlare is pre-1.0. Only the latest release on `main` gets security fixes, so 
 | Created/updated timestamps and version numbers | Labels, and the file type of each image |
 | Pinned, archived and trashed flags, sort position | Colors |
 | Argon2id salt and parameters, wrapped (encrypted) keys | Your passphrase, recovery code and data key |
+| Passkey names, credential ids and PRF salts | The secret each passkey's PRF returns |
 | API token names, scopes, prefixes and last-used times (token values are stored only as SHA-256 hashes) | |
 | Request IPs and times, as for any Cloudflare Worker | |
 
@@ -70,6 +72,7 @@ The Worker makes one kind of outbound request: every few hours it asks the GitHu
 | Create, update, trash or delete notes | | ✓ | ✓ |
 | Change the passphrase (re-wrap keys) | | | ✓ |
 | Create or revoke tokens | | | ✓ |
+| Add or remove passkeys | | | ✓ |
 
 Tokens are accepted only on `/api/v1`, never as cookies, so they can't be used for CSRF. The web app's `/api` routes accept only a Cloudflare Access session.
 
@@ -87,6 +90,7 @@ Tokens are accepted only on `/api/v1`, never as cookies, so they can't be used f
 
 - Passphrase → **Argon2id** (64 MiB, t=3, p=1) → key-encryption key.
 - Recovery code (Crockford base32) → **HKDF-SHA256** → recovery key.
+- Passkey: WebAuthn **PRF** output (32 bytes, for a random 32-byte salt per passkey) → **HKDF-SHA256** (info = credential id) → passkey key. Passkeys don't log in (Cloudflare Access does), so there's no server challenge: only the real passkey can produce the PRF output that unwraps the data key.
 - A random 256-bit data key, wrapped with **AES-256-GCM** under each of those keys.
 - Each note: **AES-256-GCM** with a random 96-bit IV and AAD `note:<id>`.
 - Each attached image: **AES-256-GCM** with a random 96-bit IV and AAD `blob:<id>`; the file type is inside the ciphertext.

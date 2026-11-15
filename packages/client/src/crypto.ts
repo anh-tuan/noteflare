@@ -4,7 +4,8 @@
  *
  *   passphrase ──Argon2id──► KEK ─┐
  *                                 ├─ AES-GCM wrap ─► wrappedDek  (in D1)
- *   recovery code ──HKDF──► RKEK ─┘                  recoveryDek (in D1)
+ *   recovery code ──HKDF──► RKEK ─┤                  recoveryDek (in D1)
+ *   passkey PRF ────HKDF──► PKEK ─┘                  passkeys.wrappedDek (in D1, one per passkey)
  *
  *   DEK (random AES-256-GCM) ──► encrypts each note, AAD = "note:<id>"
  *                            ──► encrypts each attachment, AAD = "blob:<id>"
@@ -108,6 +109,36 @@ export async function rewrapVault(
   const kek = await deriveKek(newPassphrase, kdf)
   const next: VaultRecord = { ...record, kdf, wrappedDek: await wrap(dek, kek) }
   return { record: next, dek: await unwrap(next.wrappedDek, kek, false) }
+}
+
+// ---------------------------------------------------------------- passkeys
+
+/** Random PRF input for a new passkey (stored with it, not secret). */
+export const newPasskeySalt = () => toB64(randomBytes(32))
+
+/**
+ * Wrap the data key for a passkey. `dek` must be extractable (from unlockWithPassphrase
+ * with `extractable = true`); `prfOutput` is the passkey's PRF result for its salt.
+ */
+export async function wrapDekForPasskey(dek: CryptoKey, prfOutput: BufferSource, credentialId: string): Promise<string> {
+  return wrap(dek, await derivePasskeyKek(prfOutput, credentialId))
+}
+
+/** Unwrap the data key with a passkey's PRF output. Wrong output → WrongSecretError. */
+export async function unlockWithPasskey(wrappedDek: string, prfOutput: BufferSource, credentialId: string, extractable = false) {
+  return unwrap(wrappedDek, await derivePasskeyKek(prfOutput, credentialId), extractable)
+}
+
+async function derivePasskeyKek(prfOutput: BufferSource, credentialId: string): Promise<CryptoKey> {
+  if (prfOutput.byteLength < 32) throw new WrongSecretError()
+  const ikm = await crypto.subtle.importKey('raw', prfOutput, 'HKDF', false, ['deriveKey'])
+  return crypto.subtle.deriveKey(
+    { name: 'HKDF', hash: 'SHA-256', salt: enc('noteflare:passkey:v1'), info: enc(credentialId) },
+    ikm,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['wrapKey', 'unwrapKey'],
+  )
 }
 
 // ---------------------------------------------------------------- notes

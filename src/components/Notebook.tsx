@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
-import { Archive, Check, Coffee, Download, FileInput, FileUp, FolderUp, HardDriveDownload, Info, Keyboard, KeyRound, Languages, LayoutGrid, Lock, LogOut, Moon, Plug, Plus, RefreshCw, Rows3, Search, StickyNote, Sun, Trash2, X } from 'lucide-react'
+import { Archive, Check, Coffee, Download, FileInput, Fingerprint, FileUp, FolderUp, HardDriveDownload, Info, Keyboard, KeyRound, Languages, LayoutGrid, Lock, LogOut, Moon, Plug, Plus, RefreshCw, Rows3, Search, StickyNote, Sun, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -16,6 +16,7 @@ import { NoteCard, type ReorderHandlers } from './NoteCard'
 import { neighbourId, reorderPosition } from '@/lib/reorder'
 import { NoteEditor } from './NoteEditor'
 import { ChangePassphraseDialog } from './ChangePassphraseDialog'
+import { PasskeysDialog } from './PasskeysDialog'
 import { IntegrationsDialog } from './IntegrationsDialog'
 import { BackupDialog } from './BackupDialog'
 import { AttachmentsContext, attachmentIds, clearAttachments, deleteAttachments } from '@/lib/attachments'
@@ -46,7 +47,7 @@ function readLayout(): Layout {
 
 export function Notebook({ dek }: { dek: CryptoKey }) {
   const { t, lang, setLang } = useI18n()
-  const { email, lock, signOut, attachments } = useVault()
+  const { email, lock, signOut, attachments, passkeySupport } = useVault()
   const attachmentsState = useMemo(() => ({ dek, enabled: attachments }), [dek, attachments])
   // Decrypted images live only while the notebook is unlocked.
   useEffect(() => clearAttachments, [dek])
@@ -60,6 +61,7 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
   // The note that just closed keeps the top layer while it settles back into the grid.
   const [focusId, setFocusId] = useState<string | null>(null)
   const [pwOpen, setPwOpen] = useState(false)
+  const [pkOpen, setPkOpen] = useState(false)
   const [intOpen, setIntOpen] = useState(false)
   const [backupOpen, setBackupOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
@@ -518,6 +520,11 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
                 <DropdownMenuItem onSelect={() => setPwOpen(true)}>
                   <KeyRound /> {t('nb.changePassphrase')}
                 </DropdownMenuItem>
+                {passkeySupport && (
+                  <DropdownMenuItem onSelect={() => setPkOpen(true)}>
+                    <Fingerprint /> {t('nb.passkeys')}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onSelect={() => setKeysOpen(true)} className="max-md:hidden">
                   <Keyboard /> {t('nb.shortcuts')}
                   <kbd className="ml-auto font-mono text-xs text-muted-foreground">?</kbd>
@@ -635,7 +642,7 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
 
       <ImportDropzone
         ref={importer}
-        enabled={!editing && !pwOpen && !intOpen && !backupOpen && !aboutOpen && !keysOpen}
+        enabled={!editing && !pwOpen && !pkOpen && !intOpen && !backupOpen && !aboutOpen && !keysOpen}
         onImport={importMany}
         onDone={() => {
           setQuery('')
@@ -653,6 +660,7 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
         onDeleteForever={deleteForever}
       />
       <ChangePassphraseDialog open={pwOpen} onOpenChange={setPwOpen} />
+      <PasskeysDialog open={pkOpen} onOpenChange={setPkOpen} />
       <IntegrationsDialog open={intOpen} onOpenChange={setIntOpen} />
       <BackupDialog open={backupOpen} onOpenChange={setBackupOpen} dek={dek} notes={store.notes} onImport={(found) => importMany(found)} />
       <AboutDialog
