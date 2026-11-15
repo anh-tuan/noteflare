@@ -22,7 +22,7 @@ A simple, private, serverless notes app — end-to-end encrypted, completely fre
 ![Cost](https://img.shields.io/badge/cost-%240%2Fmonth-1c1b1a)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-support-f6821f?logo=kofi&logoColor=white)](https://ko-fi.com/homielab)
 
-<img src="docs/demo.gif" width="880" alt="Unlocking NoteFlare: every note decrypts in place, then a label filter, a search, a checklist tick, a note opening, two Markdown files dropped in to import, and the dark theme" />
+<img src="docs/demo.gif" width="880" alt="Unlocking NoteFlare: every note decrypts in place, then a label filter, a search, a checklist tick, a note opening, list view, the account menu, two Markdown files dropped in to import, and the dark theme" />
 
 </div>
 

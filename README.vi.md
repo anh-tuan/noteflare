@@ -20,7 +20,7 @@ App ghi chú đơn giản, riêng tư, không cần máy chủ — mã hoá đ�
 ![Chi phí](https://img.shields.io/badge/chi%20ph%C3%AD-0%C4%91%2Fth%C3%A1ng-1c1b1a)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-%E1%BB%A7ng%20h%E1%BB%99-f6821f?logo=kofi&logoColor=white)](https://ko-fi.com/homielab)
 
-<img src="docs/demo.gif" width="880" alt="Mở khoá NoteFlare: mọi ghi chú được giải mã tại chỗ, rồi lọc theo nhãn, tìm kiếm, tick checklist, mở một ghi chú, thả hai file Markdown để nhập, và giao diện tối" />
+<img src="docs/demo.gif" width="880" alt="Mở khoá NoteFlare: mọi ghi chú được giải mã tại chỗ, rồi lọc theo nhãn, tìm kiếm, tick checklist, mở một ghi chú, chế độ danh sách, menu tài khoản, thả hai file Markdown để nhập, và giao diện tối" />
 
 </div>
 
