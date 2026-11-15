@@ -4,6 +4,10 @@ All notable changes to NoteFlare are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+### Added
+
+- A new deployment now sets up its own Cloudflare login: paste a Cloudflare API token on the first screen instead of configuring Zero Trust and editing files.
+
 ## [0.2.0] - 2026-11-15
 
 ### Changed

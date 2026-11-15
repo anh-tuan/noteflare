@@ -197,36 +197,37 @@ random 256-bit DEK ──AES-GCM, AAD = "note:<id>"──► note ciphertext    
 
 ### One click (no coding needed)
 
-You need a free [Cloudflare](https://dash.cloudflare.com/sign-up) account and a free [GitHub](https://github.com/signup) account. It takes about 10 minutes.
+You need a free [Cloudflare](https://dash.cloudflare.com/sign-up) account and a free [GitHub](https://github.com/signup) account. It takes about 10 minutes, most of it waiting for the first deploy.
 
 **Part 1: Deploy the app**
 
 1. Click the **Deploy to Cloudflare** button at the top of this page and sign in to Cloudflare.
 2. Under **Git account**, connect your GitHub account. Keep **Create private Git repository** ticked.
-3. Fill in the form. Almost everything stays as it is:
+3. Fill in the form. Only one field needs typing:
 
    | Field | What to do |
    | --- | --- |
-   | Project name | Keep `noteflare`. |
-   | D1 database | Keep **Create new** and the name `noteflare`. Leave read replication off. |
-   | `ACCESS_TEAM_DOMAIN` | Type `todo`. You replace it in Part 2. |
-   | `ACCESS_AUD` | Type `todo`. The form does not accept an empty value. You replace it in Part 2. |
    | `ALLOWED_EMAILS` | Type your own email address. |
-   | `UPDATE_CHECK_REPO` | Keep `homielab/noteflare`. |
-   | Build and deploy commands | Don't change them. |
+   | Everything else | Keep it as it is (`ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` stay `todo`). |
 
 4. Click **Create and deploy** and wait a few minutes until it finishes.
-5. Open the link Cloudflare shows you (it looks like `noteflare.<your-subdomain>.workers.dev`). The page says *Your session has expired. Sign in again*. That is correct: NoteFlare stays locked until you finish Part 2.
+5. Open the link Cloudflare shows you (it looks like `noteflare.<your-subdomain>.workers.dev`). NoteFlare shows **Finish setting up NoteFlare**.
 
-**Part 2: Lock it so only you can sign in**
+**Part 2: Set up the login**
 
-Follow [Turn on Cloudflare Access](#turn-on-cloudflare-access) below.
+NoteFlare puts a Cloudflare Access login in front of itself, so only your email can open it. Access is free for up to 50 people.
+
+1. Click **Create token in Cloudflare**. The permissions NoteFlare needs are already selected: click **Continue to summary**, then **Create Token**, and copy the token.
+2. Back in NoteFlare, paste the token, check your email address, and click **Set up the login**.
+3. Click **Sign in** and enter the code Cloudflare emails you.
+4. Delete the token in Cloudflare (**My Profile → API Tokens**). NoteFlare used it once and did not keep it.
+
+The token only works for the Cloudflare account NoteFlare runs in, so nobody else can finish the setup for you. Prefer to click through Zero Trust yourself? See [Set up Cloudflare Access by hand](#set-up-cloudflare-access-by-hand).
 
 **Part 3: Create your passphrase**
 
-1. Open your NoteFlare link again and sign in with the code Cloudflare emails you.
-2. Choose a passphrase. This is what encrypts your notes.
-3. Write down the **recovery code** and keep it somewhere safe, away from your passphrase.
+1. Choose a passphrase. This is what encrypts your notes.
+2. Write down the **recovery code** and keep it somewhere safe, away from your passphrase.
 
 ### Command line
 
@@ -238,9 +239,11 @@ bunx wrangler login
 bun run deploy   # build → deploy the Worker (creates D1) → apply migrations (including new ones on upgrade)
 ```
 
-### Turn on Cloudflare Access
+Then open the link and follow Part 2 above.
 
-Cloudflare Access is the login page in front of your notes. It is free for up to 50 people.
+### Set up Cloudflare Access by hand
+
+Instead of the in-app setup in Part 2:
 
 1. In the [Cloudflare dashboard](https://dash.cloudflare.com), open **Zero Trust**. The first time, it asks you to pick a team name and the Free plan. Remember the team name.
 2. Go to **Access controls → Applications → Create new application → Self-hosted and private**.
@@ -250,7 +253,7 @@ Cloudflare Access is the login page in front of your notes. It is free for up to
    For a `workers.dev` link you can also turn Access on in **Workers & Pages → noteflare → Settings → Domains & Routes**.
 3. Add a policy: *Allow* → *Emails* → your email address. Save the application. Login by emailed one-time code works right away; Google or GitHub login also work.
 4. Copy the **Application Audience (AUD) Tag**: in **Access controls → Applications**, select **Edit** on NoteFlare, open **Additional settings**, and copy the value (a long string of letters and numbers).
-5. Put both values into `wrangler.jsonc`. If you used the one-click button, open your new `noteflare` repository on GitHub, open `wrangler.jsonc`, click the pencil icon, and edit these lines:
+5. Put both values into `wrangler.jsonc` in place of `todo`. If you used the one-click button, open your new `noteflare` repository on GitHub, open `wrangler.jsonc`, click the pencil icon, and edit these lines:
 
    ```jsonc
    "vars": {

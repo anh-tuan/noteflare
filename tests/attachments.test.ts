@@ -91,8 +91,10 @@ describe('attachment routes', () => {
     }
   }
   // Local requests with DEV_USER_EMAIL stand in for a Cloudflare Access session.
+  // An empty settings table: no saved Access setup.
+  const DB = { prepare: () => ({ bind: () => ({ all: async () => ({ results: [] }) }) }) }
   const env = (user: string, store?: ReturnType<typeof bucket>) =>
-    ({ ACCESS_TEAM_DOMAIN: '', ACCESS_AUD: '', DEV_USER_EMAIL: user, ATTACHMENTS: store }) as never
+    ({ ACCESS_TEAM_DOMAIN: '', ACCESS_AUD: '', DEV_USER_EMAIL: user, ATTACHMENTS: store, DB }) as never
   const call = (e: never, method: string, id: string, body?: Uint8Array<ArrayBuffer>) =>
     worker.fetch(new Request(`http://localhost/api/blobs/${id}`, { method, body }) as never, e, {} as never)
 

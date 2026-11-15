@@ -1,15 +1,16 @@
 import { maskEmail } from '@/lib/maskEmail'
 import { useEffect, useId, useMemo, useState, type FormEvent, type ReactNode } from 'react'
-import { CloudOff, Copy, Download, KeyRound, LockKeyhole } from 'lucide-react'
+import { CloudOff, Copy, Download, ExternalLink, KeyRound, LockKeyhole, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useVault } from '@/lib/vault'
 import { UnsafeKdfError, WrongSecretError } from '@/lib/crypto'
 import { cipherNoise } from '@/lib/motion'
-import { ApiError } from '@/lib/api'
+import { api, ApiError, type SetupInfo } from '@/lib/api'
 import { preloadAfterLockScreen } from '@/lib/lazy'
 import { t as translate, useI18n } from '@/i18n'
+import type { MessageKey } from '@/i18n/en'
 
 const MIN_PASSPHRASE = 10
 
@@ -84,6 +85,107 @@ export function UnlockScreen() {
   if (status === 'setup') return <SetupFlow />
   if (status === 'locked') return <LockedFlow />
   return null
+}
+
+// ------------------------------------------------------------------ access setup
+
+/** A new deployment without a Cloudflare login yet: create it from here with an API token. */
+export function AccessSetupScreen() {
+  const { t } = useI18n()
+  const [info, setInfo] = useState<SetupInfo | null>(null)
+  const [token, setToken] = useState('')
+  const [emails, setEmails] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [done, setDone] = useState(false)
+
+  useEffect(() => {
+    api
+      .setupInfo()
+      .then((i) => {
+        setInfo(i)
+        setEmails(i.emails ?? '')
+      })
+      .catch(() => setError(t('access.failed')))
+  }, [t])
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+    try {
+      await api.setup(token, emails)
+      setToken('')
+      setDone(true)
+    } catch (err) {
+      const body = err instanceof ApiError ? (err.body as { error?: string; detail?: string } | null) : null
+      const known = ['bad_request', 'invalid_token', 'not_owner', 'zero_trust', 'cloudflare', 'already_set_up']
+      const message = body?.error && known.includes(body.error) ? t(`access.err.${body.error}` as MessageKey) : t('access.failed')
+      setError(body?.detail ? `${message} (${body.detail})` : message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (done)
+    return (
+      <Frame>
+        <ShieldCheck className="mb-4 size-10 text-flare" aria-hidden />
+        <Heading>{t('access.doneTitle')}</Heading>
+        <p className="mt-3 text-muted-foreground">{t('access.doneBody')}</p>
+        <Button size="lg" className="mt-8 w-full" onClick={() => location.reload()}>
+          {t('access.signIn')}
+        </Button>
+      </Frame>
+    )
+
+  return (
+    <Frame>
+      <Heading>{t('access.title')}</Heading>
+      <p className="mt-3 text-muted-foreground">{t('access.body')}</p>
+      <form onSubmit={submit} className="mt-8 grid gap-5">
+        <div className="grid gap-2">
+          <p className="text-sm font-medium">{t('access.step1')}</p>
+          <Button asChild variant="outline" size="lg" disabled={!info?.tokenUrl}>
+            <a href={info?.tokenUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink /> {t('access.createToken')}
+            </a>
+          </Button>
+          <p className="text-sm text-muted-foreground">{t('access.step1Hint')}</p>
+        </div>
+        <Field
+          label={t('access.step2')}
+          type="password"
+          autoComplete="off"
+          spellCheck={false}
+          placeholder={t('access.token')}
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+          required
+        />
+        <Field
+          label={t('access.emails')}
+          type="text"
+          inputMode="email"
+          autoComplete="email"
+          hint={t('access.emailsHint')}
+          value={emails}
+          onChange={(e) => setEmails(e.target.value)}
+          required
+        />
+        {error && <ErrorText>{error}</ErrorText>}
+        <Button size="lg" type="submit" disabled={busy || !info?.needed}>
+          <ShieldCheck />
+          {busy ? t('access.working') : t('access.submit')}
+        </Button>
+      </form>
+      <p className="mt-6 text-sm text-muted-foreground">
+        <a className="text-link underline" href={t('gate.accessGuideUrl')} target="_blank" rel="noopener">
+          {t('access.manual')}
+        </a>
+      </p>
+    </Frame>
+  )
 }
 
 // ------------------------------------------------------------------ setup

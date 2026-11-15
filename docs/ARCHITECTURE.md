@@ -25,6 +25,7 @@ flowchart LR
 | --- | --- |
 | `worker/index.ts` | The Worker: API routes, auth middleware, static assets, daily trash purge |
 | `worker/auth.ts` | Verifies the Cloudflare Access JWT (signature, issuer, audience) |
+| `worker/setup.ts` | First-run setup: creates the Access login with the owner's API token and keeps its settings in D1 |
 | `worker/tokens.ts` | Personal access tokens: generate, hash, verify |
 | `worker/openapi.ts` | OpenAPI 3.1 description served at `/api/v1/openapi.json` |
 | `worker/updates.ts` | Checks GitHub for a newer release (cached, can be turned off) |

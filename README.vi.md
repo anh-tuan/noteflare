@@ -185,36 +185,37 @@ Cloudflare Workers (Static Assets, Cron Trigger) · D1 · Cloudflare Access + jo
 
 ### Một cú nhấp (không cần biết lập trình)
 
-Bạn cần một tài khoản [Cloudflare](https://dash.cloudflare.com/sign-up) miễn phí và một tài khoản [GitHub](https://github.com/signup) miễn phí. Mất khoảng 10 phút.
+Bạn cần một tài khoản [Cloudflare](https://dash.cloudflare.com/sign-up) miễn phí và một tài khoản [GitHub](https://github.com/signup) miễn phí. Mất khoảng 10 phút, phần lớn là chờ lần deploy đầu tiên.
 
 **Phần 1: Triển khai app**
 
 1. Nhấn nút **Deploy to Cloudflare** ở đầu trang này và đăng nhập Cloudflare.
 2. Ở mục **Git account**, kết nối tài khoản GitHub của bạn. Giữ nguyên dấu tick **Create private Git repository**.
-3. Điền form. Hầu hết giữ nguyên:
+3. Điền form. Chỉ một ô cần nhập:
 
    | Ô | Cần làm gì |
    | --- | --- |
-   | Project name | Giữ `noteflare`. |
-   | D1 database | Giữ **Create new** và tên `noteflare`. Không bật read replication. |
-   | `ACCESS_TEAM_DOMAIN` | Nhập `todo`. Bạn sẽ thay nó ở Phần 2. |
-   | `ACCESS_AUD` | Nhập `todo`. Form không cho để trống. Bạn sẽ thay nó ở Phần 2. |
    | `ALLOWED_EMAILS` | Nhập email của chính bạn. |
-   | `UPDATE_CHECK_REPO` | Giữ `homielab/noteflare`. |
-   | Lệnh build và deploy | Không sửa. |
+   | Các ô còn lại | Giữ nguyên (`ACCESS_TEAM_DOMAIN` và `ACCESS_AUD` để `todo`). |
 
 4. Nhấn **Create and deploy** và chờ vài phút cho tới khi xong.
-5. Mở đường link Cloudflare đưa cho bạn (dạng `noteflare.<subdomain>.workers.dev`). Trang hiện *Your session has expired. Sign in again* (Phiên đăng nhập đã hết hạn). Như vậy là đúng: NoteFlare bị khoá cho tới khi bạn làm xong Phần 2.
+5. Mở đường link Cloudflare đưa cho bạn (dạng `noteflare.<subdomain>.workers.dev`). NoteFlare hiện **Hoàn tất cài đặt NoteFlare**.
 
-**Phần 2: Khoá lại để chỉ mình bạn đăng nhập được**
+**Phần 2: Cài đặt đăng nhập**
 
-Làm theo mục [Bật Cloudflare Access](#bật-cloudflare-access) bên dưới.
+NoteFlare tự đặt trang đăng nhập Cloudflare Access trước nó, để chỉ email của bạn mở được. Access miễn phí tới 50 người.
+
+1. Nhấn **Tạo token trên Cloudflare**. Các quyền NoteFlare cần đã được chọn sẵn: nhấn **Continue to summary**, rồi **Create Token**, và sao chép token.
+2. Quay lại NoteFlare, dán token, kiểm tra email, rồi nhấn **Cài đặt đăng nhập**.
+3. Nhấn **Đăng nhập** và nhập mã Cloudflare gửi qua email.
+4. Xoá token trên Cloudflare (**My Profile → API Tokens**). NoteFlare chỉ dùng nó một lần và không giữ lại.
+
+Token chỉ dùng được với tài khoản Cloudflare đang chạy NoteFlare, nên không ai khác cài đặt thay bạn được. Muốn tự bấm qua Zero Trust? Xem [Tự cài Cloudflare Access](#tự-cài-cloudflare-access).
 
 **Phần 3: Tạo passphrase**
 
-1. Mở lại link NoteFlare và đăng nhập bằng mã Cloudflare gửi qua email.
-2. Chọn một passphrase. Đây là thứ mã hoá ghi chú của bạn.
-3. Ghi lại **mã khôi phục** và cất ở nơi an toàn, tách khỏi passphrase.
+1. Chọn một passphrase. Đây là thứ mã hoá ghi chú của bạn.
+2. Ghi lại **mã khôi phục** và cất ở nơi an toàn, tách khỏi passphrase.
 
 ### Dòng lệnh
 
@@ -224,9 +225,11 @@ bunx wrangler login
 bun run deploy   # build → deploy Worker (tự tạo D1) → chạy migration
 ```
 
-### Bật Cloudflare Access
+Sau đó mở link và làm theo Phần 2 ở trên.
 
-Cloudflare Access là trang đăng nhập đứng trước ghi chú của bạn. Miễn phí tới 50 người.
+### Tự cài Cloudflare Access
+
+Thay cho cách cài trong app ở Phần 2:
 
 1. Trong [Cloudflare dashboard](https://dash.cloudflare.com), mở **Zero Trust**. Lần đầu, nó yêu cầu bạn đặt tên team và chọn gói Free. Nhớ tên team này.
 2. Vào **Access controls → Applications → Create new application → Self-hosted and private**.
@@ -236,7 +239,7 @@ Cloudflare Access là trang đăng nhập đứng trước ghi chú của bạn.
    Với link `workers.dev`, bạn cũng có thể bật Access trong **Workers & Pages → noteflare → Settings → Domains & Routes**.
 3. Thêm policy: *Allow* → *Emails* → email của bạn. Lưu application. Đăng nhập bằng mã OTP qua email dùng được ngay; đăng nhập Google/GitHub cũng được.
 4. Chép **Application Audience (AUD) Tag**: trong **Access controls → Applications**, chọn **Edit** ở NoteFlare, mở **Additional settings** và chép giá trị đó (một chuỗi dài gồm chữ và số).
-5. Điền cả hai giá trị vào `wrangler.jsonc`. Nếu bạn dùng nút một cú nhấp, mở repository `noteflare` mới trên GitHub, mở `wrangler.jsonc`, nhấn biểu tượng bút chì và sửa các dòng sau:
+5. Điền cả hai giá trị vào `wrangler.jsonc` thay cho `todo`. Nếu bạn dùng nút một cú nhấp, mở repository `noteflare` mới trên GitHub, mở `wrangler.jsonc`, nhấn biểu tượng bút chì và sửa các dòng sau:
 
    ```jsonc
    "vars": {

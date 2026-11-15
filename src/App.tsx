@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Toaster } from '@/components/ui/sonner'
 import { VaultProvider, useVault } from '@/lib/vault'
 import { I18nProvider, useI18n } from '@/i18n'
-import { UnlockScreen } from '@/components/UnlockScreen'
+import { AccessSetupScreen, UnlockScreen } from '@/components/UnlockScreen'
 import { lazy, Suspense } from 'react'
 
 import { loadNotebook } from '@/lib/lazy'
@@ -23,6 +23,7 @@ function Gate() {
         </a>
       </Centered>
     )
+  if (status === 'access-setup') return <AccessSetupScreen />
   if (status === 'access-missing')
     return (
       <Centered>

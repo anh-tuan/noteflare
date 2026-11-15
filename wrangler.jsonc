@@ -33,10 +33,11 @@
   // "r2_buckets": [{ "binding": "ATTACHMENTS", "bucket_name": "noteflare-attachments" }],
 
   "vars": {
-    // e.g. https://your-team.cloudflareaccess.com
-    "ACCESS_TEAM_DOMAIN": "",
-    // The Access application's "Application Audience (AUD) Tag"
-    "ACCESS_AUD": "",
+    // Leave both as "todo": NoteFlare sets up Cloudflare Access itself on first open and keeps
+    // the values in D1. To set them by hand instead: your team address
+    // (https://your-team.cloudflareaccess.com) and the Access application's AUD tag.
+    "ACCESS_TEAM_DOMAIN": "todo",
+    "ACCESS_AUD": "todo",
     // Optional second lock on top of the Access policy: emails or "@domain", comma-separated.
     "ALLOWED_EMAILS": "",
     // Where to look for new releases ("owner/repo"). Use your fork, or "off" to disable.

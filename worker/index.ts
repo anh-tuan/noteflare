@@ -1,6 +1,7 @@
 import { Hono, type Context, type Next } from 'hono'
 import { cors } from 'hono/cors'
-import { getAccessUser, isAccessMissing, isAllowedEmail, type AccessEnv } from './auth'
+import { getAccessUser, isAccessMissing, isAllowedEmail, LOCAL_HOSTS, type AccessEnv } from './auth'
+import { d1Settings, isUnset, needsSetup, resolveAccess, runSetup, SetupError, TOKEN_URL } from './setup'
 import { generateToken, hashToken, toApiToken, tokenPrefix, verifyToken, type TokenRow } from './tokens'
 import { openApiSpec } from './openapi'
 import { versionInfo, type UpdateEnv } from './updates'
@@ -52,20 +53,24 @@ const api = new Hono<{ Bindings: Env; Variables: Vars }>()
 const isV1 = (c: Ctx) => c.req.path.startsWith('/api/v1/')
 
 api.use('*', async (c, next) => {
+  const access = await accessFor(c)
   if (isV1(c)) {
     const m = /^Bearer\s+(\S+)$/i.exec(c.req.header('Authorization') ?? '')
     if (!m) return unauthorized(c, 'unauthorized', 'Send a NoteFlare API token: Authorization: Bearer nf_…')
     const t = await verifyToken(c.env.DB, m[1], c.executionCtx)
     // A token stops working when its owner is removed from ALLOWED_EMAILS.
-    if (!t || !isAllowedEmail(t.user, c.env)) return unauthorized(c, 'invalid_token', 'This token is unknown, revoked or expired.')
+    if (!t || !isAllowedEmail(t.user, access)) return unauthorized(c, 'invalid_token', 'This token is unknown, revoked or expired.')
     c.set('user', t.user)
     c.set('scope', t.scope)
     c.set('via', 'token')
   } else {
-    const user = await getAccessUser(c.req.raw, c.env)
+    const user = await getAccessUser(c.req.raw, access)
     if (!user) {
-      // Tell a first-time deployer apart from an expired session (see isAccessMissing).
-      const reason = isAccessMissing(c.req.raw, c.env) ? { reason: 'access_not_set_up' } : {}
+      // Tell a first-time deployer apart from an expired session (see isAccessMissing);
+      // `setup` sends a new deployment to the in-app setup instead of a guide.
+      const reason = isAccessMissing(c.req.raw, access)
+        ? { reason: 'access_not_set_up', setup: canSetUp(c, access) }
+        : {}
       return c.json({ error: 'unauthorized', ...reason }, 401)
     }
     c.set('user', user)
@@ -430,6 +435,53 @@ app.use(
 app.get('/api/v1/openapi.json', (c) => c.json(openApiSpec(new URL(c.req.url).origin)))
 // No version here: with a Bypass policy this is public, and a version helps target old deployments.
 app.get('/api/v1/health', (c) => c.json({ ok: true, api: 'v1' }))
+
+// ---------- In-app setup of Cloudflare Access (see worker/setup.ts) ----------
+// Public until it is done; it only accepts an API token from the account this deployment runs in.
+
+/**
+ * Access settings in effect: from wrangler.jsonc, or from D1 after the in-app setup.
+ * Local development (DEV_USER_EMAIL on localhost, Access unset) skips the D1 lookup.
+ */
+async function accessFor(c: Ctx): Promise<AccessEnv> {
+  const local = LOCAL_HOSTS.has(new URL(c.req.url).hostname)
+  if (local && c.env.DEV_USER_EMAIL && (isUnset(c.env.ACCESS_TEAM_DOMAIN) || isUnset(c.env.ACCESS_AUD))) {
+    return { ...c.env, ACCESS_TEAM_DOMAIN: '', ACCESS_AUD: '', ALLOWED_EMAILS: isUnset(c.env.ALLOWED_EMAILS) ? '' : c.env.ALLOWED_EMAILS }
+  }
+  return resolveAccess(c.env, d1Settings(c.env.DB))
+}
+
+function canSetUp(c: Ctx, access: AccessEnv) {
+  return needsSetup(access) && !LOCAL_HOSTS.has(new URL(c.req.url).hostname)
+}
+
+app.get('/api/setup', async (c) => {
+  c.header('Cache-Control', 'no-store')
+  const access = await accessFor(c)
+  if (!canSetUp(c, access)) return c.json({ needed: false })
+  return c.json({ needed: true, host: new URL(c.req.url).hostname, emails: access.ALLOWED_EMAILS ?? '', tokenUrl: TOKEN_URL })
+})
+
+app.post('/api/setup', async (c) => {
+  c.header('Cache-Control', 'no-store')
+  if (!c.req.header('Content-Type')?.toLowerCase().startsWith('application/json')) {
+    return c.json({ error: 'unsupported_media_type' }, 415)
+  }
+  if (!canSetUp(c, await accessFor(c))) {
+    return c.json({ error: 'already_set_up', message: 'The login is already set up. Reload the page to sign in.' }, 409)
+  }
+  const body = await c.req.json<{ token?: unknown; emails?: unknown }>().catch(() => null)
+  if (typeof body?.token !== 'string' || typeof body?.emails !== 'string') {
+    return c.json({ error: 'bad_request', message: 'Send token and emails.' }, 400)
+  }
+  try {
+    const teamDomain = await runSetup(d1Settings(c.env.DB), new URL(c.req.url).hostname, body.token, body.emails)
+    return c.json({ ok: true, teamDomain })
+  } catch (e) {
+    if (e instanceof SetupError) return c.json({ error: e.code, message: e.message, detail: e.detail }, 400)
+    throw e
+  }
+})
 
 app.route('/api/v1', api)
 app.route('/api', api)

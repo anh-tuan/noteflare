@@ -49,7 +49,18 @@ async function raw(path: string, init?: RequestInit): Promise<Response> {
   return res
 }
 
+/** First-run setup of the Cloudflare Access login (no sign-in yet). */
+export interface SetupInfo {
+  needed: boolean
+  host?: string
+  emails?: string
+  tokenUrl?: string
+}
+
 export const api = {
+  setupInfo: () => req<SetupInfo>('/setup'),
+  setup: (token: string, emails: string) =>
+    req<{ ok: true; teamDomain: string }>('/setup', { method: 'POST', body: JSON.stringify({ token, emails }) }),
   me: () => req<MeResponse>('/me'),
   version: (refresh = false) => req<VersionInfo>(refresh ? '/version?refresh=1' : '/version'),
   getVault: () => req<VaultRecord>('/vault'),

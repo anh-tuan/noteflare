@@ -12,7 +12,7 @@ export interface AccessEnv {
   ALLOWED_EMAILS?: string
 }
 
-const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
+export const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
 
 /** True when ALLOWED_EMAILS is empty or lists this email (or its "@domain"). */
 export function isAllowedEmail(email: string, env: Pick<AccessEnv, 'ALLOWED_EMAILS'>): boolean {

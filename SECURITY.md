@@ -45,6 +45,7 @@ NoteFlare is pre-1.0. Only the latest release on `main` gets security fixes, so 
 - **A malicious server rolling notes back or hiding them.** Encryption stops the server reading or forging content. It can still serve an older version of a note, withhold or delete notes, or change the unencrypted flags (pinned, archived, trashed), which could send a note to the trash to be purged. Keep exports (`noteflare export`) of anything you can't lose.
 - **Remote images in your own notes.** `![](https://…)` in a note loads that image when the note is shown, which tells the image's host your IP address. Images are fetched without a referrer, but avoid remote images in sensitive notes.
 - **Exports you download.** A Markdown export is plain text and decrypted images. The encrypted backup stays encrypted, but anyone holding it can try passphrases offline, like a copy of the database.
+- **Someone else finishing a new deployment's setup.** Until its login exists, NoteFlare's first screen accepts a Cloudflare API token to create it. The token is accepted only if it can read a random code kept in this deployment's D1 database; the code never leaves the Worker, so a token for another account can't finish the setup. The token is used once and never stored.
 - **Abuse by people you let in.** NoteFlare has no per-user quotas. Anyone your Access policy (and `ALLOWED_EMAILS`) admits can store notes until the D1 free tier runs out, so keep the policy narrow.
 
 ### What the server can and can't see

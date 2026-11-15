@@ -37,7 +37,7 @@ async function wipeDevice() {
   await Promise.allSettled(steps)
 }
 
-type Status = 'loading' | 'unauthorized' | 'access-missing' | 'error' | 'offline-empty' | 'setup' | 'locked' | 'unlocked'
+type Status = 'loading' | 'unauthorized' | 'access-missing' | 'access-setup' | 'error' | 'offline-empty' | 'setup' | 'locked' | 'unlocked'
 
 interface VaultState {
   status: Status
@@ -87,8 +87,9 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         if (e instanceof ApiError) {
           if (e.status !== 401) return setStatus('error')
-          const reason = (e.body as { reason?: string } | null)?.reason
-          return setStatus(reason === 'access_not_set_up' ? 'access-missing' : 'unauthorized')
+          const { reason, setup } = (e.body as { reason?: string; setup?: boolean } | null) ?? {}
+          if (reason !== 'access_not_set_up') return setStatus('unauthorized')
+          return setStatus(setup ? 'access-setup' : 'access-missing')
         }
         // No connection: unlock from the wrapped keys kept on this device.
         const vault = await localStore.getVault()
