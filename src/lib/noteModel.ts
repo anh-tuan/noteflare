@@ -1,5 +1,5 @@
 import type { EncryptedNote } from '../../shared/types'
-import type { NotePayload } from './crypto'
+import { notePayload, type NotePayload } from './crypto'
 
 export interface Note extends NotePayload {
   id: string
@@ -39,7 +39,12 @@ export function isEmptyNote(n: Pick<Note, 'title' | 'body'>) {
 
 /** The part of a note that is encrypted. */
 export function toPayload(n: Note): NotePayload {
-  return { title: n.title, body: n.body, color: n.color, labels: n.labels }
+  return notePayload(n)
+}
+
+/** True when what the note says changed (not its pin, place or trash state). */
+export function contentChanged(a: NotePayload, b: NotePayload) {
+  return a.title !== b.title || a.body !== b.body || a.color !== b.color || a.labels.join('\u0000') !== b.labels.join('\u0000')
 }
 
 /** True when two notes would look identical to the user. */

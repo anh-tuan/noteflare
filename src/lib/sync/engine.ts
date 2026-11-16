@@ -23,7 +23,7 @@ import {
 import { ApiError } from '../api'
 import { decryptNote, encryptNote } from '../crypto'
 import { dedupeKey, type ParsedNote } from '../importMarkdown'
-import { emptyNote, localRow, sameContent, toPayload, type Note, type NotePatch } from '../noteModel'
+import { contentChanged, emptyNote, localRow, sameContent, toPayload, type Note, type NotePatch } from '../noteModel'
 import type { LocalStore, OutboxEntry } from './localStore'
 import { mergeNotes, type MergeSide } from './merge'
 
@@ -281,6 +281,8 @@ export class NoteSync {
       createdAt: cur?.createdAt ?? note.createdAt,
       updatedAt: Date.now(),
     }
+    // An imported note shows its original edit date until its content changes here.
+    if (cur && contentChanged(cur, next)) delete next.importedUpdatedAt
     this.setNotes((m) => new Map(m).set(note.id, next))
     this.schedule(note.id, opts.immediate)
   }
@@ -605,6 +607,8 @@ export class NoteSync {
           pinned: p.pinned && !p.archived,
           archived: p.archived,
           position: p.modifiedAt,
+          importedCreatedAt: p.createdAt ?? p.modifiedAt,
+          importedUpdatedAt: p.modifiedAt,
         }
         const { ciphertext, iv } = await encryptNote(this.dek, note.id, toPayload(note))
         return { note, row: localRow(note, ciphertext, iv) }
@@ -696,6 +700,8 @@ function sideOf(n: Note): MergeSide {
     archived: n.archived,
     trashedAt: n.trashedAt,
     position: n.position,
+    importedCreatedAt: n.importedCreatedAt,
+    importedUpdatedAt: n.importedUpdatedAt,
   }
 }
 

@@ -12,6 +12,12 @@ describe('parseMarkdown', () => {
     expect(n.archived).toBe(false)
   })
 
+  it('reads created and updated dates back from an export', () => {
+    const n = parseMarkdown('a/x.md', '---\ntitle: x\ncreated: 2020-01-01T00:00:00.000Z\nupdated: 2021-01-01T00:00:00.000Z\n---\nbody', 5)
+    expect(n).toMatchObject({ createdAt: Date.UTC(2020, 0, 1), modifiedAt: Date.UTC(2021, 0, 1) })
+    expect(parseMarkdown('a/y.md', 'body', 5)).toMatchObject({ createdAt: undefined, modifiedAt: 5 })
+  })
+
   it('takes the first H1 as title and removes it from the body', () => {
     const n = parseMarkdown('notes/a.md', '# Đi chợ\n\n- [ ] Rau\n', 1)
     expect(n.title).toBe('Đi chợ')

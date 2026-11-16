@@ -69,6 +69,12 @@ describe('mergeNotes', () => {
     expect(mergeNotes(base, { ...base, title: 'A' }, { ...base, title: 'B' })).toBeNull()
   })
 
+  it('keeps import dates, and drops the edit date when one side dropped it', () => {
+    const dated = { ...base, importedCreatedAt: 1, importedUpdatedAt: 2 }
+    expect(mergeNotes(dated, { ...dated, title: 'T' }, { ...dated, body: 'milk\neggs' })).toMatchObject({ importedCreatedAt: 1, importedUpdatedAt: 2 })
+    expect(mergeNotes(dated, { ...dated, title: 'T' }, { ...dated, importedUpdatedAt: undefined })?.importedUpdatedAt).toBeUndefined()
+  })
+
   it('lets this device win small flag clashes instead of making a copy', () => {
     expect(mergeNotes(base, { ...base, color: 'rose' }, { ...base, color: 'sky' })?.color).toBe('rose')
   })

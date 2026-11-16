@@ -357,6 +357,38 @@ describe('offline-first sync', () => {
   })
 })
 
+describe('original dates of imported notes', () => {
+  it('keeps them encrypted, syncs them to another device and drops the edit date on the first edit', async () => {
+    const a = newEngine()
+    await a.start()
+    const parsed = [{
+      title: 'old', body: 'from 2019', color: 'default' as const, labels: [], pinned: false, archived: false,
+      modifiedAt: Date.UTC(2020, 0, 2), createdAt: Date.UTC(2019, 5, 1), sourcePath: 'old.md',
+    }]
+    expect(await a.importMany(parsed)).toMatchObject({ created: 1 })
+    const row = [...server.rows.values()][0]
+    // The server's clock (the sync cursor) is kept, and the dates are not in plaintext.
+    expect(row.updatedAt).not.toBe(Date.UTC(2020, 0, 2))
+    expect(JSON.stringify(row)).not.toContain(String(Date.UTC(2019, 5, 1)))
+
+    const b = newEngine()
+    await b.start()
+    await b.sync()
+    const got = [...b.getSnapshot().notes.values()][0]
+    expect(got).toMatchObject({ title: 'old', importedCreatedAt: Date.UTC(2019, 5, 1), importedUpdatedAt: Date.UTC(2020, 0, 2) })
+
+    b.update(got.id, { position: 5 }, { immediate: true })
+    expect(b.getSnapshot().notes.get(got.id)?.importedUpdatedAt).toBe(Date.UTC(2020, 0, 2))
+    b.update(got.id, { body: 'edited' }, { immediate: true })
+    await settle(b)
+    expect(b.getSnapshot().notes.get(got.id)?.importedCreatedAt).toBe(Date.UTC(2019, 5, 1))
+    expect(b.getSnapshot().notes.get(got.id)?.importedUpdatedAt).toBeUndefined()
+    await a.sync()
+    expect(a.getSnapshot().notes.get(got.id)?.body).toBe('edited')
+    expect(a.getSnapshot().notes.get(got.id)?.importedUpdatedAt).toBeUndefined()
+  })
+})
+
 describe('re-importing an export', () => {
   it('adds nothing the second time', async () => {
     const e = newEngine()

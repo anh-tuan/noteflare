@@ -182,6 +182,7 @@ export function parseEnex(path: string, raw: string, modifiedAt = Date.now()): P
       pinned: false,
       archived: false,
       modifiedAt: enexDate(block.match(/<updated>([\s\S]*?)<\/updated>/)?.[1]) ?? enexDate(block.match(/<created>([\s\S]*?)<\/created>/)?.[1]) ?? modifiedAt,
+      createdAt: enexDate(block.match(/<created>([\s\S]*?)<\/created>/)?.[1]) ?? undefined,
       sourcePath: `${path}#${i}`,
     })
   }

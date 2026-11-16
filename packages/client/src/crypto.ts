@@ -31,6 +31,10 @@ export interface NotePayload {
   body: string
   color: NoteColor
   labels: string[]
+  /** Original creation date (ms) of a note imported from another app. */
+  importedCreatedAt?: number
+  /** Original last-edit date (ms) of an imported note; dropped on its first edit here. */
+  importedUpdatedAt?: number
 }
 
 export const NOTE_COLORS = ['default', 'sand', 'sage', 'sky', 'lilac', 'rose', 'clay', 'slate'] as const
@@ -170,7 +174,30 @@ export async function decryptNote(
     body: typeof raw.body === 'string' ? raw.body : '',
     color: NOTE_COLORS.includes(raw.color as NoteColor) ? (raw.color as NoteColor) : 'default',
     labels: Array.isArray(raw.labels) ? raw.labels.filter((l) => typeof l === 'string') : [],
+    ...dateField('importedCreatedAt', raw.importedCreatedAt),
+    ...dateField('importedUpdatedAt', raw.importedUpdatedAt),
   }
+}
+
+/** Plaintext of a note: the optional import dates only when set. */
+export function notePayload(n: NotePayload): NotePayload {
+  return {
+    title: n.title,
+    body: n.body,
+    color: n.color,
+    labels: n.labels,
+    ...dateField('importedCreatedAt', n.importedCreatedAt),
+    ...dateField('importedUpdatedAt', n.importedUpdatedAt),
+  }
+}
+
+/** The dates to show for a note: the original ones for an imported note. */
+export function noteDates(n: NotePayload & { createdAt: number; updatedAt: number }): { createdAt: number; updatedAt: number } {
+  return { createdAt: n.importedCreatedAt ?? n.createdAt, updatedAt: n.importedUpdatedAt ?? n.updatedAt }
+}
+
+function dateField<K extends string>(key: K, v: unknown): { [P in K]?: number } {
+  return typeof v === 'number' && Number.isFinite(v) && v > 0 ? ({ [key]: v } as { [P in K]?: number }) : {}
 }
 
 // ---------------------------------------------------------------- internals

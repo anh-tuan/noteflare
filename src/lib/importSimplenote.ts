@@ -2,7 +2,7 @@
  * Import notes from a Simplenote export (Settings → Export notes → `notes.json`).
  * Only `activeNotes` are read; the trash is skipped.
  */
-import type { ParsedNote } from './importMarkdown'
+import { validDate, type ParsedNote } from './importMarkdown'
 
 const MAX_LABEL = 40
 
@@ -40,6 +40,7 @@ export function parseSimplenote(path: string, raw: string, modifiedAt = Date.now
       pinned: n.pinned === true || (Array.isArray(n.systemTags) && n.systemTags.includes('pinned')),
       archived: false,
       modifiedAt: Number.isFinite(ts) ? ts : modifiedAt,
+      createdAt: validDate(Date.parse(String(n.creationDate))),
       sourcePath: `${path}#${typeof n.id === 'string' || typeof n.id === 'number' ? n.id : index}`,
     })
   })

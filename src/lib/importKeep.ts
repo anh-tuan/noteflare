@@ -4,7 +4,7 @@
  * Markdown importer produces. Attachments (images, audio) are not imported.
  */
 import type { NoteColor } from './crypto'
-import type { ParsedNote } from './importMarkdown'
+import { validDate, type ParsedNote } from './importMarkdown'
 
 const MAX_LABEL = 40
 
@@ -100,6 +100,7 @@ export function parseKeepNote(path: string, raw: string, modifiedAt = Date.now()
     pinned: data.isPinned === true && !archived,
     archived,
     modifiedAt: Number.isFinite(usec) && usec > 0 ? Math.round(usec / 1000) : modifiedAt,
+    createdAt: validDate(Math.round(Number(data.createdTimestampUsec) / 1000)),
     sourcePath: path,
   }
 }

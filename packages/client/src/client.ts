@@ -11,6 +11,7 @@ import {
   encryptBlob,
   encryptNote,
   NOTE_COLORS,
+  notePayload,
   unlockWithPassphrase,
   unlockWithRecovery,
   type NoteColor,
@@ -195,7 +196,9 @@ export class NoteFlareClient {
     for (let attempt = 1; ; attempt++) {
       const current = await this.get(id)
       const patch = typeof change === 'function' ? change(current) : change
-      const next = { ...current, ...definedOnly(patch) }
+      const next: Note = { ...current, ...definedOnly(patch) }
+      // An imported note shows its original edit date until its content changes here.
+      if (contentChanged(current, next)) delete next.importedUpdatedAt
       validate(next)
       try {
         return await this.push(next, current.version)
@@ -307,12 +310,7 @@ export class NoteFlareClient {
 
   private async push(note: Note, baseVersion: number): Promise<Note> {
     const key = this.requireKey()
-    const { ciphertext, iv } = await encryptNote(key, note.id, {
-      title: note.title,
-      body: note.body,
-      color: note.color,
-      labels: note.labels,
-    })
+    const { ciphertext, iv } = await encryptNote(key, note.id, notePayload(note))
     const body: PutNoteBody = {
       ciphertext,
       iv,
@@ -419,5 +417,11 @@ function side(n: Note): MergeSide {
     archived: n.archived,
     trashedAt: n.trashedAt,
     position: n.position,
+    importedCreatedAt: n.importedCreatedAt,
+    importedUpdatedAt: n.importedUpdatedAt,
   }
+}
+
+function contentChanged(a: NotePayload, b: NotePayload) {
+  return a.title !== b.title || a.body !== b.body || a.color !== b.color || a.labels.join('\u0000') !== b.labels.join('\u0000')
 }

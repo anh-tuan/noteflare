@@ -25,6 +25,15 @@ describe('vault', () => {
     await expect(unlockWithRecovery(record, 'AAAAA-AAAAA-AAAAA-AAAAA-AAAAA')).rejects.toBeInstanceOf(WrongSecretError)
   }, 30_000)
 
+  it('keeps valid import dates and drops anything else', async () => {
+    const { dek } = await createVault('pass-dates')
+    const dated = { ...note, importedCreatedAt: 1_500_000_000_000, importedUpdatedAt: 1_600_000_000_000 }
+    const enc = await encryptNote(dek, id, dated)
+    expect(await decryptNote(dek, id, enc.ciphertext, enc.iv)).toEqual(dated)
+    const bad = await encryptNote(dek, id, { ...note, importedCreatedAt: 'x', importedUpdatedAt: -1 } as never)
+    expect(await decryptNote(dek, id, bad.ciphertext, bad.iv)).toEqual(note)
+  }, 30_000)
+
   it('binds ciphertext to note id (AAD)', async () => {
     const { dek } = await createVault('pass-1')
     const enc = await encryptNote(dek, id, note)

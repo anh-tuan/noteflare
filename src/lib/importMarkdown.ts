@@ -14,8 +14,10 @@ export interface SourceFile {
 export interface ParsedNote extends NotePayload {
   pinned: boolean
   archived: boolean
-  /** Used for ordering: most recently modified files first. */
+  /** Original last edit: orders the list and is shown until the note is edited. */
   modifiedAt: number
+  /** Original creation date, when the source has one. */
+  createdAt?: number
   sourcePath: string
 }
 
@@ -113,7 +115,7 @@ async function walk(entry: FileSystemEntry, out: SourceFile[]): Promise<void> {
 
 /**
  * Turn a Markdown file into a note:
- * - YAML frontmatter: `title`, `tags`/`labels`, `color`, `pinned`, `archived` (the rest is dropped)
+ * - YAML frontmatter: `title`, `tags`/`labels`, `color`, `pinned`, `archived`, `created`/`date`, `updated`/`modified` (the rest is dropped)
  * - title: frontmatter → first `# Heading` → file name
  * - labels: tags + the file's folder (relative to the dropped folder)
  */
@@ -158,7 +160,9 @@ export function parseMarkdown(path: string, raw: string, modifiedAt = Date.now()
     labels: [...labels],
     pinned: isTrue(meta.pinned),
     archived: isTrue(meta.archived),
-    modifiedAt,
+    // Our own export writes `created` / `updated`; other apps often write `date`.
+    modifiedAt: metaDate(meta.updated) ?? metaDate(meta.modified) ?? modifiedAt,
+    createdAt: metaDate(meta.created) ?? metaDate(meta.date),
     sourcePath: path,
   }
 }
@@ -170,6 +174,12 @@ function folderLabel(folder: string): string {
   let label = parts[parts.length - 1].slice(0, MAX_LABEL)
   for (let i = parts.length - 2; i >= 0 && `${parts[i]}/${label}`.length <= MAX_LABEL; i--) label = `${parts[i]}/${label}`
   return label
+}
+
+/** A frontmatter date (ISO or other `Date.parse` text) in ms, or undefined. */
+function metaDate(v: string | string[] | undefined): number | undefined {
+  const ts = typeof v === 'string' ? Date.parse(v.replace(/^["']|["']$/g, '')) : NaN
+  return Number.isFinite(ts) ? ts : undefined
 }
 
 /** Minimal YAML: `key: value`, `key: [a, b]` and `- item` lists. */
@@ -214,6 +224,9 @@ function unquote(s: string): string {
   return v.replace(/^(['"])(.*)\1$/, '$2')
 }
 const isTrue = (v: unknown) => typeof v === 'string' && /^(true|yes|1)$/i.test(v)
+
+/** A usable date in ms, or undefined. */
+export const validDate = (ts: number) => (Number.isFinite(ts) && ts > 0 ? ts : undefined)
 
 /** Duplicate key: same title + body counts as already imported. */
 export const dedupeKey = (n: Pick<NotePayload, 'title' | 'body'>) => `${n.title.trim()}\u0000${n.body.trim()}`

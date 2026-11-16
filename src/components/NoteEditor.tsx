@@ -7,6 +7,8 @@ import { Segmented } from '@/components/ui/segmented'
 import { Tooltip } from '@/components/ui/tooltip'
 import { continueList, indentLines, toggleChecklist, type Edit } from '@/lib/editing'
 import { isEmptyNote, toggleTask, type Note, type NotePatch } from '@/lib/notes'
+import { contentChanged } from '@/lib/noteModel'
+import { noteDates } from '@/lib/crypto'
 import { supportsViewTransitions, VT_CLASS } from '@/lib/motion'
 import { dateLocale, useI18n } from '@/i18n'
 import { NoteMarkdown } from './NoteMarkdown'
@@ -115,7 +117,9 @@ export function NoteEditor({ note, transitionName, allLabels, saveState, onSave,
   const morph = !!transitionName && supportsViewTransitions()
 
   const change = (patch: NotePatch, closeAfter = false) => {
-    const next = { ...(draftRef.current ?? draft), ...patch, updatedAt: Date.now() }
+    const prev = draftRef.current ?? draft
+    const next = { ...prev, ...patch, updatedAt: Date.now() }
+    if (contentChanged(prev, next)) delete next.importedUpdatedAt
     draftRef.current = next
     setDraft(next)
     if (!isNew || !isEmptyNote(next)) onSave(next)
@@ -149,7 +153,7 @@ export function NoteEditor({ note, transitionName, allLabels, saveState, onSave,
   }
   const imagesOf = (list: FileList | null | undefined) => Array.from(list ?? []).filter((f) => f.type.startsWith('image/'))
 
-  const edited = new Date(draft.updatedAt).toLocaleString(dateLocale(), {
+  const edited = new Date(noteDates(draft).updatedAt).toLocaleString(dateLocale(), {
     hour: '2-digit',
     minute: '2-digit',
     day: 'numeric',

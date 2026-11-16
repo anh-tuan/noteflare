@@ -12,6 +12,7 @@ describe('parseStandardNotes', () => {
     expect(notes.map((n) => n.title)).toEqual(['Pinned one', 'Archived one'])
     expect(notes[0]).toMatchObject({ body: 'First\nbody', labels: ['work'], pinned: true, archived: false, sourcePath: 'backup.json#n1' })
     expect(notes[0].modifiedAt).toBe(Date.parse('2024-01-03T10:00:00.000Z'))
+    expect(notes[0].createdAt).toBe(Date.parse('2024-01-01T10:00:00.000Z'))
     // archived wins over pinned
     expect(notes[1]).toMatchObject({ labels: [], pinned: false, archived: true })
     expect(notes[1].modifiedAt).toBe(Date.parse('2024-02-02T10:00:00.000Z'))

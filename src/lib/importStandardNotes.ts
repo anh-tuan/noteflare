@@ -3,7 +3,7 @@
  * Notes and the tags that reference them are read; an encrypted backup (item content is a
  * string) has no readable notes and yields nothing.
  */
-import type { ParsedNote } from './importMarkdown'
+import { validDate, type ParsedNote } from './importMarkdown'
 
 const MAX_LABEL = 40
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
@@ -55,6 +55,7 @@ export function parseStandardNotes(path: string, raw: string, modifiedAt = Date.
       pinned: sn.pinned === true && !archived,
       archived,
       modifiedAt: Number.isFinite(ts) ? ts : modifiedAt,
+      createdAt: validDate(Date.parse(String(item.created_at))),
       sourcePath: `${path}#${uuid || notes.length}`,
     })
   }

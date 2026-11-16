@@ -295,6 +295,9 @@ and unwrap `recoveryDek` the same way.
 
 - Plaintext: UTF-8 JSON `{"title": string, "body": string, "color": string, "labels": string[]}`.
   `body` is Markdown. `color` is one of `default, sand, sage, sky, lilac, rose, clay, slate`.
+  Optional `importedCreatedAt` / `importedUpdatedAt` (ms since epoch): the dates a note had in the app it was imported from.
+  Show them instead of the row's `createdAt` / `updatedAt` when present (the SDK's `noteDates(note)` does this), and drop
+  `importedUpdatedAt` when you change the note's content. Readers that don't know them can ignore them. Never use them as a sync cursor.
 - `ciphertext = AES-256-GCM(key = DEK, iv = 12 random bytes, AAD = "note:" + id)`, base64, with the tag appended.
 - Use a **new random IV for every write**. Never reuse one.
 - The AAD binds the ciphertext to the note id, so content can't be moved between notes.

@@ -8,6 +8,7 @@ const fixture = readFileSync(new URL('./fixtures/evernote.enex', import.meta.url
 describe('parseEnex', () => {
   it('maps title, body, labels and time, and skips attachments', () => {
     const notes = parseEnex('export.enex', fixture, 5)
+    expect(notes[0].createdAt).toBe(Date.UTC(2024, 0, 1, 10))
     expect(notes).toHaveLength(2)
     expect(notes[0]).toMatchObject({ title: 'Trip & plans', labels: ['travel', 'todo'], pinned: false, archived: false, color: 'default', sourcePath: 'export.enex#0' })
     expect(notes[0].modifiedAt).toBe(Date.UTC(2024, 0, 2, 3, 4, 5))

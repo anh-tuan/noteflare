@@ -61,7 +61,7 @@ D1 holds the data in these tables (plus `settings` for the app's own setup).
 - **`shares`**: read-only links to one note. Per link: a random id, the note id, the snapshot's `ciphertext` and `iv`, an expiry and a timestamp. The snapshot is `{ title, body }` encrypted with AES-256-GCM under a fresh key per link (additional data `share:<id>`); the key exists only in the link's `#fragment`.
 - **`api_tokens`**: token name, scope, prefix, SHA-256 hash, expiry and last use. The token itself is never stored.
 
-Inside a note's ciphertext is JSON: `{ title, body, color, labels }`. See [SECURITY.md](../SECURITY.md) for exactly what is and isn't visible to the server.
+Inside a note's ciphertext is JSON: `{ title, body, color, labels }`, plus `importedCreatedAt` / `importedUpdatedAt` for imported notes (their original dates; the row's `updated_at` stays the server's clock, because it is the sync cursor). See [SECURITY.md](../SECURITY.md) for exactly what is and isn't visible to the server.
 
 ## Keys
 

@@ -5,7 +5,7 @@
  *   so the file is as unreadable as the database without the passphrase.
  */
 import type { EncryptedNote, VaultRecord } from '../../shared/types'
-import { decryptNote } from './crypto'
+import { decryptNote, noteDates } from './crypto'
 import type { ParsedNote } from './importMarkdown'
 import type { Note } from './noteModel'
 import type { ZipEntry } from './zip'
@@ -21,7 +21,8 @@ export function toMarkdownFile(n: Note): string {
   if (n.color !== 'default') lines.push(`color: ${n.color}`)
   if (n.pinned) lines.push('pinned: true')
   if (n.archived) lines.push('archived: true')
-  lines.push(`created: ${new Date(n.createdAt).toISOString()}`, `updated: ${new Date(n.updatedAt).toISOString()}`, '---', '', n.body, '')
+  const { createdAt, updatedAt } = noteDates(n)
+  lines.push(`created: ${new Date(createdAt).toISOString()}`, `updated: ${new Date(updatedAt).toISOString()}`, '---', '', n.body, '')
   return lines.join('\n')
 }
 
@@ -62,7 +63,7 @@ export function markdownEntries(notes: Note[], root = 'NoteFlare', attachments?:
             return file ? `${up}attachments/${file}` : url
           })
         : n.body
-      return { name: `${folder}/${name}.md`, data: enc.encode(toMarkdownFile({ ...n, body })), modifiedAt: n.updatedAt }
+      return { name: `${folder}/${name}.md`, data: enc.encode(toMarkdownFile({ ...n, body })), modifiedAt: noteDates(n).updatedAt }
     })
 }
 

@@ -11,7 +11,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { createRequire } from 'node:module'
-import { NoteFlareClient, NoteFlareError, WrongSecretError } from '../../client/dist/index.js'
+import { NoteFlareClient, NoteFlareError, WrongSecretError, noteDates } from '../../client/dist/index.js'
 import { noteFolder, safeName } from '../lib/paths.mjs'
 
 const HELP = `noteflare — end-to-end encrypted notes from the terminal
@@ -166,7 +166,8 @@ function toMarkdown(n, { frontmatter }) {
     if (n.color !== 'default') lines.push(`color: ${n.color}`)
     if (n.pinned) lines.push('pinned: true')
     if (n.archived) lines.push('archived: true')
-    lines.push(`created: ${new Date(n.createdAt).toISOString()}`, `updated: ${new Date(n.updatedAt).toISOString()}`, '---', '')
+    const { createdAt, updatedAt } = noteDates(n)
+    lines.push(`created: ${new Date(createdAt).toISOString()}`, `updated: ${new Date(updatedAt).toISOString()}`, '---', '')
   } else if (n.title) {
     lines.push(`# ${n.title}`, '')
   }
