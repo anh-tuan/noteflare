@@ -3,6 +3,7 @@
  * Everything is read and parsed in the browser; only ciphertext is uploaded.
  */
 import { NOTE_COLORS, type NoteColor, type NotePayload } from './crypto'
+import { readZip } from './zip'
 
 export interface SourceFile {
   /** Relative path, e.g. "Vault/Work/plan.md". */
@@ -33,7 +34,36 @@ export const isMarkdownPath = (path: string) => MD_EXT.test(path) && !inSkippedD
 export const isKeepPath = (path: string) => /\.json$/i.test(path) && !inSkippedDir(path)
 /** Evernote export (one file, many notes); see importEvernote.ts. */
 export const isEnexPath = (path: string) => /\.enex$/i.test(path) && !inSkippedDir(path)
-export const isImportablePath = (path: string) => isMarkdownPath(path) || isKeepPath(path) || isEnexPath(path)
+/**
+ * A .txt that may hold a JSON export: Standard Notes names its decrypted backup
+ * "Standard Notes Backup and Import File.txt". Inside a .zip every .txt is tried.
+ */
+export const isTextExportPath = (path: string, inZip = false) =>
+  /\.txt$/i.test(path) && (inZip || /standard notes/i.test(path.split('/').pop()!)) && !inSkippedDir(path)
+/** An export packed as a .zip (Standard Notes, Simplenote, Google Takeout…): unpacked in the browser. */
+export const isZipPath = (path: string) => /\.zip$/i.test(path) && !inSkippedDir(path)
+export const isImportablePath = (path: string) =>
+  isMarkdownPath(path) || isKeepPath(path) || isEnexPath(path) || isTextExportPath(path) || isZipPath(path)
+
+/**
+ * Replace each .zip with the importable files inside it ("Backup.zip/notes.json"). A zip over
+ * MAX_EXPORT_BYTES is kept as is, so the caller counts it as too large.
+ */
+export async function expandZips(files: SourceFile[]): Promise<SourceFile[]> {
+  const out: SourceFile[] = []
+  for (const f of files) {
+    if (!isZipPath(f.path) || f.file.size > MAX_EXPORT_BYTES) {
+      out.push(f)
+      continue
+    }
+    const want = (name: string) => !isZipPath(name) && (isMarkdownPath(name) || isKeepPath(name) || isEnexPath(name) || isTextExportPath(name, true))
+    for (const e of await readZip(new Uint8Array(await f.file.arrayBuffer()), want, MAX_EXPORT_BYTES)) {
+      const path = `${f.path}/${e.name}`
+      out.push({ path, file: new File([e.data], path.split('/').pop()!, { lastModified: e.modifiedAt }) })
+    }
+  }
+  return out
+}
 
 // ------------------------------------------------------------- collecting files
 

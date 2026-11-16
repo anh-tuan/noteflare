@@ -92,7 +92,7 @@ Files are read and encrypted in your browser and uploaded in batches. Try it wit
 **From Evernote, Simplenote or Standard Notes**: drop the export file onto NoteFlare, or use **Account → Import from Evernote, Simplenote, Standard Notes…**.
 - **Evernote**: File → Export notes as `.enex`. Title, text, checklists and tags come across; attachments do not.
 - **Simplenote**: Settings → Export notes, unzip it and drop `notes.json`. Tags and pinned come across; the trash is skipped.
-- **Standard Notes**: Backups → download a decrypted backup. Notes, tags, pinned and archived come across; encrypted backups can't be read.
+- **Standard Notes**: Backups → download a decrypted backup, then drop the .zip (or the .txt inside it). Notes, tags, pinned and archived come across; encrypted backups can't be read.
 
 ## 📤 Export and backup
 

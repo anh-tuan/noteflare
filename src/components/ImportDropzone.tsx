@@ -3,7 +3,7 @@ import { FolderDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { useI18n } from '@/i18n'
 import type { ImportResult } from '@/lib/notes'
-import { filesFromDrop, filesFromInput, isEnexPath, isKeepPath, MAX_EXPORT_BYTES, MAX_IMPORT_CHARS, parseMarkdown, type ParsedNote, type SourceFile } from '@/lib/importMarkdown'
+import { expandZips, filesFromDrop, filesFromInput, isEnexPath, isKeepPath, MAX_EXPORT_BYTES, MAX_IMPORT_CHARS, parseMarkdown, type ParsedNote, type SourceFile } from '@/lib/importMarkdown'
 import { parseKeepNote } from '@/lib/importKeep'
 import { parseEnex } from '@/lib/importEvernote'
 import { parseSimplenote } from '@/lib/importSimplenote'
@@ -54,11 +54,13 @@ export const ImportDropzone = forwardRef<ImportHandle, Props>(function ImportDro
     busy.current = true
     const id = toast.loading(t('imp.reading'))
     try {
-      const files = await collect()
+      const files = await expandZips(await collect())
       const parsed: ParsedNote[] = []
       let tooLarge = 0
       for (const { path, file } of files) {
-        const isExport = isEnexPath(path) || isKeepPath(path)
+        // Paths that got here as .txt are possible JSON exports (see isTextExportPath).
+        const isText = /\.txt$/i.test(path)
+        const isExport = isEnexPath(path) || isKeepPath(path) || isText
         if (file.size > (isExport ? MAX_EXPORT_BYTES : MAX_IMPORT_CHARS * 4)) {
           tooLarge++
           continue
@@ -72,12 +74,13 @@ export const ImportDropzone = forwardRef<ImportHandle, Props>(function ImportDro
           parsed.push(parseMarkdown(path, text, file.lastModified))
           continue
         }
-        // A .json is a Simplenote or Standard Notes export, or one Keep note; other .json files are skipped silently.
+        // A .json is a Simplenote or Standard Notes export, or one Keep note; a .txt can only be one of the first two.
+        // Anything else is skipped silently.
         const notes = isEnexPath(path)
           ? parseEnex(path, text, file.lastModified)
           : (parseSimplenote(path, text, file.lastModified) ??
             parseStandardNotes(path, text, file.lastModified) ??
-            [parseKeepNote(path, text, file.lastModified)].filter((n): n is ParsedNote => !!n))
+            (isText ? [] : [parseKeepNote(path, text, file.lastModified)].filter((n): n is ParsedNote => !!n)))
         for (const note of notes) {
           if (note.title.length + note.body.length > MAX_IMPORT_CHARS) tooLarge++
           else parsed.push(note)
@@ -167,7 +170,7 @@ export const ImportDropzone = forwardRef<ImportHandle, Props>(function ImportDro
   return (
     <>
       <input ref={folderInput} type="file" multiple hidden onChange={onPick} />
-      <input ref={filesInput} type="file" multiple hidden accept=".md,.markdown,.json,.enex,text/markdown,application/json" onChange={onPick} />
+      <input ref={filesInput} type="file" multiple hidden accept=".md,.markdown,.json,.enex,.txt,.zip,text/markdown,application/json,application/zip" onChange={onPick} />
       {over && (
         <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center bg-background/70 p-6 backdrop-blur-sm animate-in fade-in-0 duration-200">
           <div className="dropzone flex w-full max-w-lg flex-col items-center gap-3 rounded-3xl border-2 border-dashed border-flare bg-surface/90 px-8 py-12 text-center shadow-2xl animate-in zoom-in-95 duration-300">

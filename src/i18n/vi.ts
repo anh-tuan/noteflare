@@ -300,10 +300,10 @@ export const vi: Record<MessageKey, string> = {
 
   'imp.dropTitle': 'Thả để nhập',
   'imp.keepHint': 'Chọn thư mục Keep trong bản xuất Google Takeout đã giải nén.',
-  'imp.otherHint': 'Chọn file .enex của Evernote, notes.json của Simplenote hoặc bản sao lưu Standard Notes đã giải mã.',
+  'imp.otherHint': 'Chọn file .enex của Evernote, notes.json của Simplenote hoặc bản sao lưu Standard Notes đã giải mã (file .zip vừa tải về).',
   'imp.dropBody': 'Thư mục, file .md, bản xuất Google Keep, hoặc bản xuất Evernote, Simplenote hay Standard Notes. Mọi thứ được mã hoá trên máy bạn trước khi tải lên.',
   'imp.reading': 'Đang đọc file…',
-  'imp.noMarkdown': 'Không có gì để nhập. NoteFlare đọc file .md, thư mục Keep của Google Takeout, .enex của Evernote, bản xuất Simplenote và Standard Notes đã giải mã.',
+  'imp.noMarkdown': 'Không có gì để nhập. NoteFlare đọc file .md, thư mục Keep của Google Takeout, .enex của Evernote, bản xuất Simplenote và Standard Notes đã giải mã, kể cả file .zip.',
   'imp.progress': 'Đang mã hoá và nhập {done}/{total}…',
   'imp.doneOne': 'Đã nhập 1 ghi chú',
   'imp.doneMany': 'Đã nhập {n} ghi chú',

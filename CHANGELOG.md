@@ -4,6 +4,10 @@ All notable changes to NoteFlare are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+### Fixed
+
+- Importing a Standard Notes backup works with the .zip file Standard Notes downloads. Before, the file couldn't be picked and a dropped zip was ignored. Other exports packed as a .zip, such as Simplenote's, now import too.
+
 ## [0.5.0] - 2026-11-16
 
 ### Added

@@ -91,3 +91,85 @@ export function makeZip(entries: ZipEntry[]): Uint8Array<ArrayBuffer> {
   view.setUint32(offset + 16, centralStart, true)
   return out
 }
+
+// ---------------------------------------------------------------- reader
+
+export interface ZipFile {
+  /** Path inside the archive. */
+  name: string
+  data: Uint8Array<ArrayBuffer>
+  modifiedAt: number
+}
+
+/** The opposite of dosDateTime. */
+function fromDos(time: number, date: number): number {
+  return new Date(1980 + (date >> 9), ((date >> 5) & 15) - 1, date & 31, time >> 11, (time >> 5) & 63, (time & 31) * 2).getTime()
+}
+
+/** Inflate raw DEFLATE data, giving up past `max` bytes (a zip can claim one size and hold another). */
+async function inflate(data: Uint8Array<ArrayBuffer>, max: number): Promise<Uint8Array<ArrayBuffer> | null> {
+  const reader = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader()
+  const chunks: Uint8Array[] = []
+  let size = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    size += value.length
+    if (size > max) {
+      await reader.cancel()
+      return null
+    }
+    chunks.push(value)
+  }
+  const out = new Uint8Array(size)
+  let at = 0
+  for (const c of chunks) {
+    out.set(c, at)
+    at += c.length
+  }
+  return out
+}
+
+/**
+ * Read the files of a ZIP archive (stored or deflated, as every common tool writes them) for
+ * import. Only names `want` accepts are unpacked; folders, encrypted entries, other compression
+ * methods and files over `maxBytes` are skipped. Throws when the data is not a ZIP (or is ZIP64).
+ */
+export async function readZip(bytes: Uint8Array<ArrayBuffer>, want: (name: string) => boolean, maxBytes: number): Promise<ZipFile[]> {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  let end = -1
+  for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 22 - 0xffff); i--) {
+    if (view.getUint32(i, true) === 0x06054b50) {
+      end = i
+      break
+    }
+  }
+  if (end < 0) throw new Error('Not a ZIP file')
+  const count = view.getUint16(end + 10, true)
+  let at = view.getUint32(end + 16, true)
+  if (count === 0xffff || at === 0xffffffff) throw new Error('ZIP64 is not supported')
+
+  const dec = new TextDecoder()
+  const out: ZipFile[] = []
+  for (let i = 0; i < count; i++) {
+    if (at + 46 > bytes.length || view.getUint32(at, true) !== 0x02014b50) throw new Error('Damaged ZIP file')
+    const flags = view.getUint16(at + 8, true)
+    const method = view.getUint16(at + 10, true)
+    const modifiedAt = fromDos(view.getUint16(at + 12, true), view.getUint16(at + 14, true))
+    const packed = view.getUint32(at + 20, true)
+    const size = view.getUint32(at + 24, true)
+    const nameLen = view.getUint16(at + 28, true)
+    const next = at + 46 + nameLen + view.getUint16(at + 30, true) + view.getUint16(at + 32, true)
+    const local = view.getUint32(at + 42, true)
+    const name = dec.decode(bytes.subarray(at + 46, at + 46 + nameLen))
+    at = next
+
+    if (name.endsWith('/') || flags & 1 || (method !== 0 && method !== 8) || size > maxBytes || !want(name)) continue
+    if (local + 30 > bytes.length || view.getUint32(local, true) !== 0x04034b50) throw new Error('Damaged ZIP file')
+    const start = local + 30 + view.getUint16(local + 26, true) + view.getUint16(local + 28, true)
+    const raw = bytes.slice(start, start + packed)
+    const data = method === 0 ? raw : await inflate(raw, maxBytes)
+    if (data) out.push({ name, data, modifiedAt })
+  }
+  return out
+}
