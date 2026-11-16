@@ -4,6 +4,10 @@ All notable changes to NoteFlare are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+### Security
+
+- Exporting notes, from the app or the `noteflare` command line, always keeps every file inside the export folder. Before, a crafted label such as `a/../../x` could put a file outside it.
+
 ## [0.4.0] - 2026-11-16
 
 ### Added
