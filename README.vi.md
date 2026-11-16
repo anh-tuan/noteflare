@@ -33,7 +33,7 @@ App ghi chú đơn giản, riêng tư, không cần máy chủ — mã hoá đ�
 - 📌 **Sắp xếp theo cách của bạn**: ghim, kéo ghi chú theo thứ tự bạn muốn, 8 màu giấy, nhãn, lưu trữ, thùng rác tự dọn sau 30 ngày.
 - 📥 **Kéo thả để nhập**: thả một thư mục Markdown (vault Obsidian cũng được), bản xuất Google Keep hoặc bản xuất Evernote, Simplenote, Standard Notes, mọi ghi chú được mã hoá khi nhập.
 - 📤 **Xuất và sao lưu**: tải ghi chú về dạng Markdown, hoặc một bản sao lưu đã mã hoá để khôi phục sau này.
-- 🖼️ **Ảnh mã hoá** (tuỳ chọn): đính kèm ảnh được mã hoá trước khi tải lên, lưu trong bucket R2 của riêng bạn.
+- 🖼️ **Ảnh và file mã hoá** (tuỳ chọn): đính kèm ảnh, PDF hay bất kỳ file nào, được mã hoá trước khi tải lên và lưu trong bucket R2 của riêng bạn.
 - ✨ **Mở khoá là giải mã tại chỗ**: từng ghi chú hiện ra từ ciphertext ngay khi bạn mở khoá.
 - 📱 **Cài như app, dùng được khi offline**: thêm NoteFlare vào màn hình chính. Đọc, viết, mở khoá không cần mạng; có mạng lại thì tự đồng bộ.
 - 🔀 **Đồng bộ nhiều thiết bị thông minh**: hai máy cùng sửa một ghi chú thì được gộp theo từng dòng, giống `git merge`. Chỉ khi sửa cùng một dòng khác nhau mới tách thành bản riêng.
@@ -96,22 +96,22 @@ File được đọc và mã hoá ngay trong trình duyệt rồi tải lên the
 
 **Tài khoản → Xuất và sao lưu…** có ba việc:
 
-- **Markdown (.zip)**: mỗi ghi chú là một file `.md` đọc được, có frontmatter, kèm ảnh đính kèm. Nhập lại vào NoteFlare được, hoặc mở bằng bất kỳ trình soạn Markdown nào. File này **không được mã hoá**, hãy cất ở nơi an toàn.
-- **Bản sao lưu đã mã hoá**: một file `.json` chứa ghi chú đúng như máy chủ lưu, vẫn ở dạng mã hoá. Không có passphrase thì vô dụng. Không bao gồm thùng rác và ảnh đính kèm.
+- **Markdown (.zip)**: mỗi ghi chú là một file `.md` đọc được, có frontmatter, kèm ảnh và file đính kèm. Nhập lại vào NoteFlare được, hoặc mở bằng bất kỳ trình soạn Markdown nào. File này **không được mã hoá**, hãy cất ở nơi an toàn.
+- **Bản sao lưu đã mã hoá**: một file `.json` chứa ghi chú đúng như máy chủ lưu, vẫn ở dạng mã hoá. Không có passphrase thì vô dụng. Không bao gồm thùng rác, ảnh và file đính kèm.
 - **Khôi phục**: chọn một bản sao lưu đã mã hoá, ghi chú trong đó được thêm vào sổ; ghi chú bạn đã có sẽ được bỏ qua. Bản sao lưu từ một bản triển khai khác, hoặc từ trước khi đặt lại bằng mã khôi phục, sẽ hỏi passphrase đang dùng vào lúc tạo nó.
 
-Khi đã bật binding R2 (xem mục Ảnh), NoteFlare còn tự lưu một bản sao lưu đã mã hoá mỗi ngày và giữ 14 bản gần nhất. Chúng nằm ở mục **Sao lưu hằng ngày** trong cùng hộp thoại; khôi phục từ đó.
+Khi đã bật binding R2 (xem mục Ảnh và file), NoteFlare còn tự lưu một bản sao lưu đã mã hoá mỗi ngày và giữ 14 bản gần nhất. Chúng nằm ở mục **Sao lưu hằng ngày** trong cùng hộp thoại; khôi phục từ đó.
 
-## 🖼️ Ảnh
+## 🖼️ Ảnh và file
 
-Ghi chú có thể kèm ảnh, được mã hoá như mọi thứ khác. Tính năng này mặc định tắt vì cần một bucket R2, và R2 yêu cầu phương thức thanh toán dù có 10 GB miễn phí.
+Ghi chú có thể kèm ảnh và bất kỳ file nào khác (PDF, bảng tính, file zip), được mã hoá như mọi thứ khác. Tính năng này mặc định tắt vì cần một bucket R2, và R2 yêu cầu phương thức thanh toán dù có 10 GB miễn phí.
 
-Để bật, bỏ dấu chú thích ở dòng `r2_buckets` trong `wrangler.jsonc` rồi deploy; bucket được tạo tự động. Khi đó nút **Thêm ảnh** hiện trong trình soạn, và bạn cũng có thể dán hoặc thả ảnh vào ghi chú.
+Để bật, bỏ dấu chú thích ở dòng `r2_buckets` trong `wrangler.jsonc` rồi deploy; bucket được tạo tự động. Khi đó nút **Đính kèm file** hiện trong trình soạn, và bạn cũng có thể thả file hoặc dán ảnh vào ghi chú. Ảnh hiện ngay trong ghi chú; file khác hiện thành một thẻ có tên và dung lượng, bấm vào là tải về.
 
-- Ảnh được mã hoá trong trình duyệt bằng khoá dữ liệu của bạn trước khi tải lên. Máy chủ chỉ lưu khối dữ liệu không đọc được, không biết nội dung hay loại file.
-- PNG, JPEG, GIF, WebP và AVIF, mỗi ảnh tối đa 10 MB.
-- Xoá vĩnh viễn một ghi chú cũng xoá những ảnh chỉ ghi chú đó dùng. Ghi chú bị dọn khỏi thùng rác sau 30 ngày thì ảnh vẫn nằm lại trong bucket.
-- Lần đầu mỗi thiết bị hiển thị một ảnh cần có mạng.
+- Mọi thứ được mã hoá trong trình duyệt bằng khoá dữ liệu của bạn trước khi tải lên. Máy chủ chỉ lưu khối dữ liệu không đọc được, không biết nội dung, tên file hay loại file.
+- Mọi loại file, mỗi file tối đa 10 MB. Ảnh PNG, JPEG, GIF, WebP và AVIF được hiển thị ngay trong ghi chú.
+- Xoá vĩnh viễn một ghi chú cũng xoá những file đính kèm chỉ ghi chú đó dùng. Ghi chú bị dọn khỏi thùng rác sau 30 ngày thì file đính kèm vẫn nằm lại trong bucket.
+- Lần đầu mỗi thiết bị hiển thị một ảnh cần có mạng, và mỗi lần tải một file về cũng vậy.
 
 ## 🔗 Chia sẻ ghi chú bằng liên kết
 

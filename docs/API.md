@@ -203,7 +203,7 @@ never sent automatically by browsers, so this is safe).
 | PUT | `/notes/{id}` | write | Create (`baseVersion: 0`) or update (`baseVersion: <current>`) |
 | POST | `/notes/batch` | write | Create up to 40 notes in one transaction: `{ "notes": [{ id, …NoteWrite }] }` |
 | DELETE | `/notes/{id}` | write | Delete forever; the note must already be in the trash |
-| GET | `/blobs/{id}` | read | An encrypted image attachment (binary) |
+| GET | `/blobs/{id}` | read | An encrypted attachment (binary) |
 | PUT | `/blobs/{id}` | write | Store an encrypted attachment: raw bytes, `Content-Type: application/octet-stream`, at most 10 MB before encryption |
 | DELETE | `/blobs/{id}` | write | Delete an attachment |
 | GET | `/backups` | read | `{ "backups": [{ "date": "2026-11-16", "size": 12345 }] }`, newest first; empty without the R2 binding |
@@ -233,14 +233,19 @@ To write, send the same fields except `id`, `version`, `createdAt` and
 
 ## Attachments
 
-Deployments with an R2 bucket bound as `ATTACHMENTS` can store encrypted images; `/me` reports this as `attachments: true`, and the blob routes answer `501 attachments_disabled` otherwise.
+Deployments with an R2 bucket bound as `ATTACHMENTS` can store encrypted images and files; `/me` reports this as `attachments: true`, and the blob routes answer `501 attachments_disabled` otherwise.
 
-A note refers to an image as ordinary Markdown, `![alt](/api/blobs/<id>)`. The blob is `iv (12 bytes) || AES-256-GCM ciphertext` under the data key with AAD `blob:<id>`. The plaintext is one byte with the length of the MIME type, the MIME type, then the image bytes, so the server never learns the file type. Clients accept `image/png`, `image/jpeg`, `image/gif`, `image/webp` and `image/avif` only.
+A note refers to an image as ordinary Markdown, `![alt](/api/blobs/<id>)`. The blob is `iv (12 bytes) || AES-256-GCM ciphertext` under the data key with AAD `blob:<id>`. The plaintext is one byte with the length of the MIME type, the MIME type, then the image bytes, so the server never learns the file type. Clients show `image/png`, `image/jpeg`, `image/gif`, `image/webp` and `image/avif` only.
+
+Any other file is a link, `[report.pdf (1.2 MB)](/api/blobs/<id>)`, which the app shows as a chip that downloads it. Same encryption; the plaintext is a zero byte, the length of a header (2 bytes, big endian), the header as UTF-8 JSON `{"name": "report.pdf", "type": "application/pdf"}`, then the file bytes, so the name and type stay hidden too. An image plaintext never starts with a zero byte. Treat the name and type as untrusted: save the file, do not render it.
 
 ```ts
 const { markdown } = await nf.uploadAttachment(bytes, 'image/png', 'diagram')
 await nf.create({ title: 'With a picture', body: markdown })
 const { bytes: image, type } = await nf.getAttachment(id)
+
+const pdf = await nf.uploadFile(pdfBytes, 'report.pdf', 'application/pdf')
+const { bytes, file } = await nf.getAttachment(pdf.id) // file = { name, type }
 ```
 
 With the same bucket, the daily cron saves each user's encrypted backup under `backups/<email>/<date>.json` and keeps the newest 14. They are ciphertext, like `GET /notes`.

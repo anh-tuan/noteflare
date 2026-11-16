@@ -264,25 +264,51 @@ export function normalizeRecoveryCode(code: string): string {
 
 // ---------------------------------------------------------------- attachments
 
+/** What a non-image file carries inside its ciphertext. */
+export interface AttachmentFile {
+  /** The file's own name, e.g. "report.pdf". */
+  name: string
+  /** The MIME type the uploader declared. Never use it to display the bytes in the app's origin. */
+  type: string
+}
+
+const MAX_FILE_NAME = 255
+
 /**
- * Encrypt an image for upload. The result is `iv || AES-GCM(type-length || type || bytes)`
- * with AAD "blob:<id>", so the server learns neither the content nor the file type and
- * cannot hand back one attachment in place of another.
+ * Encrypt an attachment for upload. The result is `iv || AES-GCM(plaintext)` with AAD
+ * "blob:<id>", so the server learns neither the content, the file type nor the file name
+ * and cannot hand back one attachment in place of another. The plaintext is
+ *
+ *   image:  type-length (1 byte, never 0) || type || bytes
+ *   file:   0x00 || header-length (2 bytes, big endian) || JSON {"name","type"} || bytes
+ *
+ * Pass `name` to store a file; without it the image layout is used.
  */
-export async function encryptBlob(dek: CryptoKey, id: string, bytes: Uint8Array, type: string): Promise<Uint8Array<ArrayBuffer>> {
-  const typeBytes = enc(type)
-  if (typeBytes.length > 255) throw new Error('Attachment type is too long')
-  const plain = new Uint8Array(1 + typeBytes.length + bytes.length)
-  plain[0] = typeBytes.length
-  plain.set(typeBytes, 1)
-  plain.set(bytes, 1 + typeBytes.length)
+export async function encryptBlob(dek: CryptoKey, id: string, bytes: Uint8Array, type: string, name?: string): Promise<Uint8Array<ArrayBuffer>> {
+  let head: Uint8Array
+  if (name === undefined) {
+    const typeBytes = enc(type)
+    if (!typeBytes.length || typeBytes.length > 255) throw new Error('Attachment type is empty or too long')
+    head = concat(new Uint8Array([typeBytes.length]), typeBytes)
+  } else {
+    const meta: AttachmentFile = { name: name.slice(0, MAX_FILE_NAME), type: type.slice(0, 255) }
+    const header = enc(JSON.stringify(meta))
+    head = concat(new Uint8Array([0, header.length >> 8, header.length & 0xff]), header)
+  }
   const iv = randomBytes(IV_BYTES)
-  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: enc(`blob:${id}`) }, dek, plain)
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: enc(`blob:${id}`) }, dek, concat(head, bytes))
   return concat(iv, new Uint8Array(ct))
 }
 
-/** Decrypt an attachment. The type is reported only if it is an image type clients accept. */
-export async function decryptBlob(dek: CryptoKey, id: string, data: Uint8Array): Promise<{ bytes: Uint8Array<ArrayBuffer>; type: string }> {
+/**
+ * Decrypt an attachment. `type` is an image type clients accept, or
+ * "application/octet-stream" for everything else; `file` is set for a stored file.
+ */
+export async function decryptBlob(
+  dek: CryptoKey,
+  id: string,
+  data: Uint8Array,
+): Promise<{ bytes: Uint8Array<ArrayBuffer>; type: string; file?: AttachmentFile }> {
   if (data.length <= IV_BYTES) throw new Error('Attachment is empty')
   const pt = new Uint8Array(
     await crypto.subtle.decrypt(
@@ -292,6 +318,17 @@ export async function decryptBlob(dek: CryptoKey, id: string, data: Uint8Array):
     ),
   )
   const typeLength = pt[0] ?? 0
+  if (typeLength === 0) {
+    if (pt.length < 3) throw new Error('Attachment is damaged')
+    const end = 3 + ((pt[1] << 8) | pt[2])
+    if (end > pt.length) throw new Error('Attachment is damaged')
+    const meta: unknown = JSON.parse(new TextDecoder().decode(pt.subarray(3, end)))
+    const field = (key: string) => {
+      const value = (meta as Record<string, unknown> | null)?.[key]
+      return typeof value === 'string' ? value : ''
+    }
+    return { bytes: pt.slice(end), type: 'application/octet-stream', file: { name: field('name').slice(0, MAX_FILE_NAME), type: field('type') } }
+  }
   const type = new TextDecoder().decode(pt.subarray(1, 1 + typeLength))
   return {
     bytes: pt.slice(1 + typeLength),

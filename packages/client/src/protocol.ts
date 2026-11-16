@@ -62,7 +62,7 @@ export interface MeResponse {
   auth: 'session' | 'token'
   /** What the caller may do: a session or write token can change notes; a read token can only read. */
   scope: TokenScope
-  /** True when this deployment has storage for encrypted image attachments (an R2 bucket). */
+  /** True when this deployment has storage for encrypted attachments (an R2 bucket). */
   attachments: boolean
 }
 
@@ -114,9 +114,9 @@ export const BATCH_MAX_BYTES = 8 * 1024 * 1024
 
 // ---------------------------------------------------------------- attachments
 
-/** Largest image a note can carry, before encryption. */
+/** Largest file a note can carry, before encryption. */
 export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
-/** Image types clients accept; anything else is refused on upload and never rendered. */
+/** Image types clients show inside a note; any other attachment is only ever offered as a download. */
 export const ATTACHMENT_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/avif'] as const
 
 // ---------------------------------------------------------------- shared links

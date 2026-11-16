@@ -35,7 +35,7 @@ import {
 interface Env extends AccessEnv, UpdateEnv {
   DB: D1Database
   ASSETS: Fetcher
-  /** Optional R2 bucket for encrypted image attachments. Without it the feature is off. */
+  /** Optional R2 bucket for encrypted attachments. Without it the feature is off. */
   ATTACHMENTS?: R2Bucket
   /** Durable Object namespace for live sync. Without it other devices pick changes up by polling. */
   LIVE?: DurableObjectNamespace
@@ -52,8 +52,8 @@ type Ctx = Context<{ Bindings: Env; Variables: Vars }>
 const MAX_CIPHERTEXT = 512 * 1024 // ~384 KB plaintext / note
 const ID_RE = /^[0-9a-f-]{36}$/i
 const B64_RE = /^[A-Za-z0-9+/]*={0,2}$/
-/** Encryption adds an IV, an auth tag and the hidden file type to each attachment. */
-const MAX_BLOB_BYTES = MAX_ATTACHMENT_BYTES + 512
+/** Encryption adds an IV, an auth tag and the hidden file name and type to each attachment. */
+const MAX_BLOB_BYTES = MAX_ATTACHMENT_BYTES + 4096
 const TRASH_TTL_MS = 30 * 24 * 60 * 60 * 1000
 const DAY_MS = 24 * 60 * 60 * 1000
 /** Same bounds the clients enforce before deriving a key (see KDF_LIMITS in packages/client). */
@@ -487,7 +487,7 @@ api.delete('/shares/:id', sessionOnly, async (c) => {
 // ---------- API tokens (web app only) ----------
 
 // ---------- Attachments ----------
-// Encrypted images in R2, one object per attachment under the owner's own prefix.
+// Encrypted files in R2, one object per attachment under the owner's own prefix.
 // The server never sees what they are: the bytes and the file type are inside the ciphertext.
 
 const blobKey = (c: Ctx, id: string) => `${c.get('user')}/${id}`

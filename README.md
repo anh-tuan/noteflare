@@ -35,7 +35,7 @@ A simple, private, serverless notes app — end-to-end encrypted, completely fre
 - 📌 **Organize your way**: pin, drag notes into the order you want, 8 paper colors, labels, archive, and a trash that empties itself after 30 days.
 - 📥 **Drag-and-drop import**: drop a folder of Markdown (an Obsidian vault works), a Google Keep export, or an Evernote, Simplenote or Standard Notes export, and every note arrives encrypted.
 - 📤 **Export and backup**: download your notes as Markdown, or as an encrypted backup you can restore later.
-- 🖼️ **Encrypted images** (optional): attach images that are encrypted before upload, stored in your own R2 bucket.
+- 🖼️ **Encrypted images and files** (optional): attach images, PDFs or any other file, encrypted before upload and stored in your own R2 bucket.
 - ✨ **Decrypt-in-place unlock**: watch every note resolve from ciphertext the moment you unlock.
 - 📱 **Install it, use it offline**: add NoteFlare to your home screen like an app. Read, write and unlock without a connection; changes sync when you're back.
 - 🔀 **Smart multi-device sync**: edits from two devices to the same note are merged line by line, like `git merge`. Only a true clash (same line, different text) becomes a separate copy.
@@ -98,22 +98,22 @@ Files are read and encrypted in your browser and uploaded in batches. Try it wit
 
 **Account → Export and backup…** gives you three things:
 
-- **Markdown (.zip)**: one readable `.md` file per note, with frontmatter, plus any attached images. It imports back into NoteFlare or opens in any Markdown editor. It is **not encrypted**, so keep it somewhere safe.
-- **Encrypted backup**: one `.json` file with your notes exactly as the server stores them, still encrypted. It is useless without your passphrase. The trash and attached images are left out.
+- **Markdown (.zip)**: one readable `.md` file per note, with frontmatter, plus any attached images and files. It imports back into NoteFlare or opens in any Markdown editor. It is **not encrypted**, so keep it somewhere safe.
+- **Encrypted backup**: one `.json` file with your notes exactly as the server stores them, still encrypted. It is useless without your passphrase. The trash and attached images and files are left out.
 - **Restore**: pick an encrypted backup and its notes are added to your notebook; notes you already have are skipped. A backup from another deployment, or from before a recovery-code reset, asks for the passphrase that was in use when it was made.
 
-With the R2 binding on (see Images), NoteFlare also saves an encrypted backup every day and keeps the last 14. They are listed under **Daily backups** in the same dialog; restore one from there.
+With the R2 binding on (see Images and files), NoteFlare also saves an encrypted backup every day and keeps the last 14. They are listed under **Daily backups** in the same dialog; restore one from there.
 
-## 🖼️ Images
+## 🖼️ Images and files
 
-Notes can carry images, encrypted like everything else. This is off by default because it needs an R2 bucket, and R2 asks for a payment method even on its free 10 GB.
+Notes can carry images and any other file (a PDF, a spreadsheet, a zip), encrypted like everything else. This is off by default because it needs an R2 bucket, and R2 asks for a payment method even on its free 10 GB.
 
-To turn it on, uncomment the `r2_buckets` line in `wrangler.jsonc` and deploy; the bucket is created for you. Then **Add image** appears in the editor, and you can also paste or drop an image into a note.
+To turn it on, uncomment the `r2_buckets` line in `wrangler.jsonc` and deploy; the bucket is created for you. Then **Attach a file** appears in the editor, and you can also drop files or paste an image into a note. Images show inside the note; any other file shows as a chip with its name and size, and a click downloads it.
 
-- Images are encrypted in your browser with your data key before upload. The server stores opaque blobs and never learns the content or the file type.
-- PNG, JPEG, GIF, WebP and AVIF, up to 10 MB each.
-- Deleting a note forever also deletes the images only it used. Notes purged from the trash after 30 days leave their images in the bucket.
-- Images need a connection the first time each device shows them.
+- Everything is encrypted in your browser with your data key before upload. The server stores opaque blobs and never learns the content, the file name or the file type.
+- Any file type, up to 10 MB each. PNG, JPEG, GIF, WebP and AVIF images are shown in the note.
+- Deleting a note forever also deletes the attachments only it used. Notes purged from the trash after 30 days leave their attachments in the bucket.
+- Images need a connection the first time each device shows them, and files each time you download them.
 
 ## 🔗 Share a note by link
 
@@ -192,7 +192,7 @@ passphrase    ──Argon2id (64 MiB, t=3)──► KEK  ──AES-GCM wrap─�
 recovery code ──HKDF-SHA256─────────────► RKEK ──AES-GCM wrap──► recoveryDek  ├─ stored in D1
 passkey PRF   ──HKDF-SHA256─────────────► PKEK ──AES-GCM wrap──► passkey copy │  (one per passkey)
 random 256-bit DEK ──AES-GCM, AAD = "note:<id>"──► note ciphertext            ┘
-                   ──AES-GCM, AAD = "blob:<id>"──► image ciphertext (R2, optional)
+                   ──AES-GCM, AAD = "blob:<id>"──► attachment ciphertext (R2, optional)
 ```
 
 - Your passphrase, the data key (DEK) and note content never leave the browser unencrypted. Titles, bodies, labels and colors are all inside the ciphertext; only `pinned`, `archived`, `trashed_at`, `position` and timestamps are plaintext so notes can be sorted.
@@ -264,7 +264,7 @@ Have a coding agent with terminal access (Claude Code, Codex, Gemini CLI…) dep
 | --- | --- |
 | Account → **Workers Scripts** → Edit | Upload the Worker, its files and its daily trash cleanup, and turn on its `workers.dev` link |
 | Account → **D1** → Edit | Create the `noteflare` database and apply its migrations |
-| Account → **Workers R2 Storage** → Edit | Only if you turned on image attachments in `wrangler.jsonc` |
+| Account → **Workers R2 Storage** → Edit | Only if you turned on attachments in `wrangler.jsonc` |
 
 Limit **Account Resources** to your account. Your account ID is on the dashboard home page (**Account ID**, under the account menu). Then clone this repository, open the agent in its folder and paste:
 
@@ -429,7 +429,7 @@ Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md), and open an 
 - [x] Export to Markdown (CLI)
 - [x] Export from the web app, encrypted backup and restore
 - [x] Drag-and-drop reordering
-- [x] Encrypted image attachments on R2
+- [x] Encrypted image and file attachments on R2
 - [x] Google Keep Takeout import
 - [x] Code highlighting via TanStack Highlight
 

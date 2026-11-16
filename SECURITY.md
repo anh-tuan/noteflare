@@ -57,8 +57,8 @@ NoteFlare is pre-1.0. Only the latest release on `main` gets security fixes, so 
 | Visible to the server (and Cloudflare) | Encrypted, never visible |
 | --- | --- |
 | Your Cloudflare Access email | Note titles |
-| How many notes and images you have, their ids and ciphertext sizes | Note bodies and attached images |
-| Created/updated timestamps and version numbers | Labels, and the file type of each image |
+| How many notes and attachments you have, their ids and ciphertext sizes | Note bodies, attached images and files |
+| Created/updated timestamps and version numbers | Labels, and the name and type of each attachment |
 | Pinned, archived and trashed flags, sort position | Colors |
 | Argon2id salt and parameters, wrapped (encrypted) keys | Your passphrase, recovery code and data key |
 | Passkey names, credential ids and PRF salts | The secret each passkey's PRF returns |
@@ -98,7 +98,7 @@ Tokens are accepted only on `/api/v1`, never as cookies, so they can't be used f
 - Passkey: WebAuthn **PRF** output (32 bytes, for a random 32-byte salt per passkey) → **HKDF-SHA256** (info = credential id) → passkey key. Passkeys don't log in (Cloudflare Access does), so there's no server challenge: only the real passkey can produce the PRF output that unwraps the data key.
 - A random 256-bit data key, wrapped with **AES-256-GCM** under each of those keys.
 - Each note: **AES-256-GCM** with a random 96-bit IV and AAD `note:<id>`.
-- Each attached image: **AES-256-GCM** with a random 96-bit IV and AAD `blob:<id>`; the file type is inside the ciphertext.
+- Each attached image or file: **AES-256-GCM** with a random 96-bit IV and AAD `blob:<id>`; the file name and type are inside the ciphertext. Only PNG, JPEG, GIF, WebP and AVIF are ever displayed; any other file is only saved as a download, never opened inside the app.
 - In the browser the data key is a non-extractable `CryptoKey` held only in memory.
 - Random 96-bit IVs are safe for far more saves than a person makes (the limit is around 2³² encryptions per key).
 

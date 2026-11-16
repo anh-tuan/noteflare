@@ -1,5 +1,5 @@
 import { useRef, useState, type KeyboardEvent } from 'react'
-import { ImagePlus, ListChecks } from 'lucide-react'
+import { ListChecks, Paperclip } from 'lucide-react'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,7 @@ import { NoteMarkdown } from './NoteMarkdown'
 import { NoteActions, PinButton } from './NoteActions'
 import { LabelMenu } from './LabelMenu'
 import { colorVar } from './noteColors'
-import { AttachmentError, uploadImage, useAttachments } from '@/lib/attachments'
+import { AttachmentError, uploadAttachment, useAttachments } from '@/lib/attachments'
 
 interface Props {
   note: Note | null
@@ -44,9 +44,9 @@ export function NoteEditor({ note, transitionName, allLabels, saveState, onSave,
     setPreview(opensInPreview(note))
   }
   const bodyRef = useRef<HTMLTextAreaElement>(null)
-  const imageInput = useRef<HTMLInputElement>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
   const attachments = useAttachments()
-  // The newest draft, for work that finishes after an await (image uploads).
+  // The newest draft, for work that finishes after an await (uploads).
   const draftRef = useRef<Note | null>(note)
   draftRef.current = draft
 
@@ -124,13 +124,13 @@ export function NoteEditor({ note, transitionName, allLabels, saveState, onSave,
 
   const canAttach = !!attachments?.enabled && !draft.trashedAt
 
-  /** Encrypt and upload images, then put their Markdown at the cursor (or at the end, in reading mode). */
-  const addImages = async (files: File[]) => {
+  /** Encrypt and upload files, then put their Markdown at the cursor (or at the end, in reading mode). */
+  const addFiles = async (files: File[]) => {
     if (!attachments || !files.length) return
     for (const file of files) {
       const id = toast.loading(t('att.uploading'))
       try {
-        const markdown = await uploadImage(attachments.dek, file)
+        const markdown = await uploadAttachment(attachments.dek, file)
         const el = bodyRef.current
         if (el) {
           const at = el.selectionStart
@@ -143,8 +143,7 @@ export function NoteEditor({ note, transitionName, allLabels, saveState, onSave,
         }
         toast.success(t('att.added'), { id })
       } catch (err) {
-        const reason = err instanceof AttachmentError ? err.reason : null
-        toast.error(reason === 'size' ? t('att.tooLarge') : reason === 'type' ? t('att.badType') : t('att.failed'), { id })
+        toast.error(err instanceof AttachmentError ? t('att.tooLarge') : t('att.failed'), { id })
       }
     }
   }
@@ -215,10 +214,11 @@ export function NoteEditor({ note, transitionName, allLabels, saveState, onSave,
             if (canAttach && Array.from(e.dataTransfer.types).includes('Files')) e.preventDefault()
           }}
           onDrop={(e) => {
-            const images = imagesOf(e.dataTransfer.files)
-            if (!canAttach || !images.length) return
+            // A dropped folder has no type and no bytes to read.
+            const files = Array.from(e.dataTransfer.files).filter((f) => f.type || f.size)
+            if (!canAttach || !files.length) return
             e.preventDefault()
-            void addImages(images)
+            void addFiles(files)
           }}
         >
           {preview ? (
@@ -247,7 +247,7 @@ export function NoteEditor({ note, transitionName, allLabels, saveState, onSave,
                 const images = imagesOf(e.clipboardData.files)
                 if (!canAttach || !images.length) return
                 e.preventDefault()
-                void addImages(images)
+                void addFiles(images)
               }}
               aria-keyshortcuts="Control+Enter Meta+Enter Control+Shift+L Meta+Shift+L"
               autoFocus={isNew}
@@ -293,21 +293,20 @@ export function NoteEditor({ note, transitionName, allLabels, saveState, onSave,
           )}
           {canAttach && (
             <>
-              <Tooltip label={t('ed.addImage')}>
-                <Button variant="ghost" size="icon-sm" aria-label={t('ed.addImage')} onClick={() => imageInput.current?.click()}>
-                  <ImagePlus />
+              <Tooltip label={t('ed.attach')}>
+                <Button variant="ghost" size="icon-sm" aria-label={t('ed.attach')} onClick={() => fileInput.current?.click()}>
+                  <Paperclip />
                 </Button>
               </Tooltip>
               <input
-                ref={imageInput}
+                ref={fileInput}
                 type="file"
                 hidden
                 multiple
-                accept="image/png,image/jpeg,image/gif,image/webp,image/avif"
                 onChange={(e) => {
-                  const images = imagesOf(e.target.files)
+                  const files = Array.from(e.target.files ?? [])
                   e.target.value = ''
-                  void addImages(images)
+                  void addFiles(files)
                 }}
               />
             </>

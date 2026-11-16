@@ -6,6 +6,7 @@
  */
 import {
   decryptBlob,
+  type AttachmentFile,
   decryptNote,
   encryptBlob,
   encryptNote,
@@ -267,8 +268,22 @@ export class NoteFlareClient {
     return { id, markdown: `![${alt.replace(/[[\]\n\r]/g, ' ')}](/api/blobs/${id})` }
   }
 
-  /** Download and decrypt an attachment a note refers to as `/api/blobs/<id>`. */
-  async getAttachment(id: string): Promise<{ bytes: Uint8Array; type: string }> {
+  /**
+   * Encrypt and upload a file of any type. Its name and MIME type are stored inside the
+   * ciphertext; the returned Markdown is a link the app shows as a download chip.
+   */
+  async uploadFile(bytes: Uint8Array, name: string, type = 'application/octet-stream'): Promise<{ id: string; markdown: string }> {
+    if (bytes.length > MAX_ATTACHMENT_BYTES) throw new TypeError(`An attachment can be at most ${MAX_ATTACHMENT_BYTES} bytes`)
+    const id = crypto.randomUUID()
+    await this.requestRaw('PUT', `/blobs/${id}`, await encryptBlob(this.requireKey(), id, bytes, type, name))
+    return { id, markdown: `[${name.replace(/[[\]\n\r]/g, ' ').trim() || 'file'}](/api/blobs/${id})` }
+  }
+
+  /**
+   * Download and decrypt an attachment a note refers to as `/api/blobs/<id>`. `type` is an
+   * accepted image type or "application/octet-stream"; `file` is set for a stored file.
+   */
+  async getAttachment(id: string): Promise<{ bytes: Uint8Array; type: string; file?: AttachmentFile }> {
     const res = await this.requestRaw('GET', `/blobs/${id}`)
     return decryptBlob(this.requireKey(), id, new Uint8Array(await res.arrayBuffer()))
   }

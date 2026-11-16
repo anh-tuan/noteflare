@@ -45,7 +45,7 @@ export function openApiSpec(origin: string) {
             hasVault: { type: 'boolean' },
             auth: { enum: ['session', 'token'] },
             scope: { enum: ['read', 'write'] },
-            attachments: { type: 'boolean', description: 'This deployment can store encrypted image attachments' },
+            attachments: { type: 'boolean', description: 'This deployment can store encrypted attachments' },
           },
         },
         Vault: {
@@ -262,7 +262,7 @@ export function openApiSpec(origin: string) {
       },
       '/blobs/{id}': {
         get: {
-          summary: 'An encrypted image attachment: iv || AES-GCM ciphertext, AAD "blob:<id>"',
+          summary: 'An encrypted attachment (image or file): iv || AES-GCM ciphertext, AAD "blob:<id>"',
           parameters: [id],
           responses: {
             200: { description: 'The encrypted attachment', content: { 'application/octet-stream': { schema: { type: 'string', format: 'binary' } } } },

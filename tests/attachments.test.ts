@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import worker from '../worker/index'
 import { createVault, decryptBlob, encryptBlob } from '../src/lib/crypto'
-import { attachmentIdOf, attachmentIds, rewriteAttachments } from '../src/lib/attachments'
+import { attachmentDownloadName, attachmentExportName, attachmentIdOf, attachmentIds, rewriteAttachments } from '../src/lib/attachments'
 import { markdownEntries } from '../src/lib/exportNotes'
 import { emptyNote } from '../src/lib/noteModel'
 import { MAX_ATTACHMENT_BYTES } from '../shared/types'
@@ -41,6 +41,53 @@ describe('attachment encryption', () => {
     const blob = await encryptBlob(dek, ID_A, bytes('<svg onload=alert(1)>'), 'image/svg+xml')
     expect((await decryptBlob(dek, ID_A, blob)).type).toBe('application/octet-stream')
   }, 30_000)
+})
+
+describe('file attachments', () => {
+  it('hides the name, type and content of a file and gives them back', async () => {
+    const { dek } = await createVault('passphrase')
+    const blob = await encryptBlob(dek, ID_A, bytes('%PDF-secret'), 'application/pdf', 'tax report.pdf')
+    for (const hidden of ['tax report', 'application/pdf', 'secret']) expect(text(blob)).not.toContain(hidden)
+    const back = await decryptBlob(dek, ID_A, blob)
+    expect(text(back.bytes)).toBe('%PDF-secret')
+    expect(back.file).toEqual({ name: 'tax report.pdf', type: 'application/pdf' })
+    await expect(decryptBlob(dek, ID_B, blob)).rejects.toThrow()
+  })
+
+  it('never reports a file as something to display, whatever it claims to be', async () => {
+    const { dek } = await createVault('passphrase')
+    for (const type of ['image/png', 'text/html']) {
+      const back = await decryptBlob(dek, ID_A, await encryptBlob(dek, ID_A, bytes('<script>'), type, 'x.html'))
+      expect(back.type).toBe('application/octet-stream')
+    }
+  })
+
+  it('still reads images, which carry no name', async () => {
+    const { dek } = await createVault('passphrase')
+    const back = await decryptBlob(dek, ID_A, await encryptBlob(dek, ID_A, bytes('PNG'), 'image/png'))
+    expect(back).toMatchObject({ type: 'image/png' })
+    expect(back.file).toBeUndefined()
+    expect(text(back.bytes)).toBe('PNG')
+  })
+
+  it('refuses a file whose header runs past its end', async () => {
+    const { dek } = await createVault('passphrase')
+    const iv = new Uint8Array(12)
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: bytes(`blob:${ID_A}`) }, dek, new Uint8Array([0, 0xff, 0xff, 1]))
+    await expect(decryptBlob(dek, ID_A, new Uint8Array([...iv, ...new Uint8Array(ct)]))).rejects.toThrow()
+  })
+
+  it('saves and exports under names that cannot leave their folder', () => {
+    const file = (name: string) => ({ bytes: bytes(''), type: 'application/octet-stream', file: { name, type: '' } })
+    const saved = attachmentDownloadName(file('../../.ssh/evil key.pdf'))
+    expect(saved).not.toMatch(/[\\/]|^\./)
+    expect(saved.endsWith('evil key.pdf')).toBe(true)
+    expect(attachmentDownloadName(file(''), 'notes')).toBe('notes')
+    expect(attachmentDownloadName({ bytes: bytes(''), type: 'image/png' }, 'photo')).toBe('photo.png')
+    expect(attachmentExportName(ID_A, file('../a/b.PDF'))).toBe(`${ID_A}.pdf`)
+    expect(attachmentExportName(ID_A, file('no extension/..'))).toBe(`${ID_A}.bin`)
+    expect(attachmentExportName(ID_A, { bytes: bytes(''), type: 'image/jpeg' })).toBe(`${ID_A}.jpg`)
+  })
 })
 
 describe('attachment links', () => {
@@ -126,7 +173,7 @@ describe('attachment routes', () => {
     const me = env('me@example.com', bucket())
     expect((await call(me, 'PUT', 'not-an-id', bytes('x'))).status).toBe(400)
     expect((await call(me, 'PUT', ID_A)).status).toBe(400)
-    expect((await call(me, 'PUT', ID_A, new Uint8Array(MAX_ATTACHMENT_BYTES + 1024))).status).toBe(413)
+    expect((await call(me, 'PUT', ID_A, new Uint8Array(MAX_ATTACHMENT_BYTES + 8192))).status).toBe(413)
   })
 
   it('answers 501 when the deployment has no bucket, and stays locked without a session', async () => {

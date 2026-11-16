@@ -21,7 +21,7 @@ import { localRow, toPayload } from '@/lib/noteModel'
 import type { ImportResult, Note } from '@/lib/notes'
 import { localStore } from '@/lib/sync/localStore'
 import { makeZip, type ZipEntry } from '@/lib/zip'
-import { attachmentExtension, attachmentIds, loadAttachment } from '@/lib/attachments'
+import { attachmentExportName, attachmentIds, loadAttachment } from '@/lib/attachments'
 import { api } from '@/lib/api'
 import { useI18n } from '@/i18n'
 
@@ -81,14 +81,14 @@ export function BackupDialog({ open, onOpenChange, dek, notes, onImport }: Props
   const exportMarkdown = () =>
     guard(async () => {
       if (!live.length) return void toast(t('bk.empty'))
-      // Attached images are decrypted into the archive next to the notes that use them.
+      // Attached files are decrypted into the archive next to the notes that use them.
       const images: ZipEntry[] = []
       const names = new Map<string, string>()
       let missing = 0
       for (const id of new Set(live.flatMap((n) => attachmentIds(n.body)))) {
         try {
           const image = await loadAttachment(dek, id)
-          names.set(id, `${id}.${attachmentExtension(image.type)}`)
+          names.set(id, attachmentExportName(id, image))
           images.push({ name: `NoteFlare/attachments/${names.get(id)}`, data: image.bytes })
         } catch {
           missing++

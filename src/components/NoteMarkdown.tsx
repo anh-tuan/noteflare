@@ -3,7 +3,7 @@ import { Markdown, type MarkdownComponents } from '@tanstack/markdown/react'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/i18n'
 import { highlightCode } from '@/lib/highlight'
-import { AttachmentImage, attachmentIdOf } from '@/lib/attachments'
+import { AttachmentFile, AttachmentImage, attachmentIdOf } from '@/lib/attachments'
 
 interface Props {
   source: string
@@ -12,7 +12,8 @@ interface Props {
   className?: string
   /**
    * False for text that comes from outside the user's own notes (release notes from GitHub):
-   * images are shown as their alt text, so rendering never contacts a third-party server.
+   * images are shown as their alt text, so rendering never contacts a third-party server,
+   * and links to attachments stay plain links.
    */
   images?: boolean
 }
@@ -26,9 +27,12 @@ export const NoteMarkdown = memo(function NoteMarkdown({ source, onToggleTask, c
   let taskIndex = 0 // render order matches source order
 
   const components: MarkdownComponents = {
-    a: (props: ComponentProps<'a'>) => (
-      <a {...props} target="_blank" rel="noopener noreferrer nofollow" onClick={(e) => e.stopPropagation()} />
-    ),
+    a: (props: ComponentProps<'a'>) =>
+      images && attachmentIdOf(props.href) ? (
+        <AttachmentFile id={attachmentIdOf(props.href)!}>{props.children}</AttachmentFile>
+      ) : (
+        <a {...props} target="_blank" rel="noopener noreferrer nofollow" onClick={(e) => e.stopPropagation()} />
+      ),
     input: (props: ComponentProps<'input'>) => {
       if (props.type !== 'checkbox') return <input {...props} />
       const index = taskIndex++

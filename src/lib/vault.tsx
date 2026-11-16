@@ -45,7 +45,7 @@ interface VaultState {
   email: string | null
   /** Started without reaching the server; running from the copy on this device. */
   offline: boolean
-  /** This deployment can store encrypted image attachments. Unknown (false) while offline. */
+  /** This deployment can store encrypted attachments. Unknown (false) while offline. */
   attachments: boolean
   dek: CryptoKey | null
   /** Create a vault and return the recovery code for the user to store. */
