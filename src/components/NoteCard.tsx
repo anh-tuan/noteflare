@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent } from 'react'
+import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Note, NotePatch } from '@/lib/notes'
 import { toggleTask } from '@/lib/notes'
@@ -25,6 +26,11 @@ interface Props {
   dragging?: boolean
   /** Another card is being dragged over this one. */
   dropTarget?: boolean
+  /** Select mode: a click picks the card instead of opening it. */
+  selecting?: boolean
+  /** This card is picked (select mode). */
+  selected?: boolean
+  onSelect?: (id: string) => void
 }
 
 export interface ReorderHandlers {
@@ -43,8 +49,9 @@ const isNoteDrag = (e: DragEvent<HTMLElement>) => Array.from(e.dataTransfer.type
 const reveal =
   'opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100'
 
-export const NoteCard = memo(function NoteCard({ note, revealIndex, lifted, focused, onOpen, onChange, onDeleteForever, reorder, dragging, dropTarget }: Props) {
+export const NoteCard = memo(function NoteCard({ note, revealIndex, lifted, focused, onOpen, onChange, onDeleteForever, reorder, dragging, dropTarget, selecting, selected, onSelect }: Props) {
   const { t } = useI18n()
+  const activate = () => (selecting ? onSelect?.(note.id) : onOpen(note.id))
   const change = (patch: NotePatch) => onChange(note.id, patch, true)
   const bodyRef = useRef<HTMLDivElement>(null)
   const [clipped, setClipped] = useState(false)
@@ -74,12 +81,13 @@ export const NoteCard = memo(function NoteCard({ note, revealIndex, lifted, focu
       role="button"
       tabIndex={0}
       aria-label={note.title || t('card.untitled')}
-      onClick={() => onOpen(note.id)}
+      aria-pressed={selecting ? !!selected : undefined}
+      onClick={activate}
       onKeyDown={(e) => {
         if (e.target !== e.currentTarget) return
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
-          onOpen(note.id)
+          activate()
         } else if (reorder && e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowLeft')) {
           e.preventDefault()
           reorder.onMove(note.id, -1)
@@ -124,13 +132,26 @@ export const NoteCard = memo(function NoteCard({ note, revealIndex, lifted, focu
         lifted && 'opacity-0',
         dragging && 'opacity-40',
         dropTarget && 'ring-[3px] ring-ring/60',
+        selected && 'ring-[3px] ring-primary',
       )}
       style={style}
     >
       <div className={cn('p-4 pb-2', revealing && 'reveal-content')}>
-        <div className={cn('absolute top-2 right-2 z-10', note.pinned ? '' : reveal)}>
-          <PinButton note={note} onChange={change} />
-        </div>
+        {selecting ? (
+          <span
+            aria-hidden
+            className={cn(
+              'absolute top-2.5 right-2.5 z-10 grid size-6 place-items-center rounded-full border-2 transition-colors',
+              selected ? 'border-primary bg-primary text-primary-foreground' : 'border-foreground/30 bg-background/60',
+            )}
+          >
+            {selected && <Check className="size-4" />}
+          </span>
+        ) : (
+          <div className={cn('absolute top-2 right-2 z-10', note.pinned ? '' : reveal)}>
+            <PinButton note={note} onChange={change} />
+          </div>
+        )}
 
         {note.title && <h3 className="mb-1.5 pr-8 text-[1.0625rem] font-semibold leading-snug">{note.title}</h3>}
 
@@ -141,7 +162,7 @@ export const NoteCard = memo(function NoteCard({ note, revealIndex, lifted, focu
           >
             <NoteMarkdown
               source={note.body}
-              onToggleTask={note.trashedAt ? undefined : (i) => change({ body: toggleTask(note.body, i) })}
+              onToggleTask={note.trashedAt || selecting ? undefined : (i) => change({ body: toggleTask(note.body, i) })}
             />
           </div>
         ) : (
@@ -158,9 +179,13 @@ export const NoteCard = memo(function NoteCard({ note, revealIndex, lifted, focu
           </ul>
         )}
 
-        <div className={cn('-ml-2 mt-1 flex h-8 items-center gap-0.5', reveal)}>
-          <NoteActions note={note} onChange={change} onDeleteForever={() => onDeleteForever(note.id)} />
-        </div>
+        {selecting ? (
+          <div className="h-2" />
+        ) : (
+          <div className={cn('-ml-2 mt-1 flex h-8 items-center gap-0.5', reveal)}>
+            <NoteActions note={note} onChange={change} onDeleteForever={() => onDeleteForever(note.id)} />
+          </div>
+        )}
       </div>
 
       {revealing && (

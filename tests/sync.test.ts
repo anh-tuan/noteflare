@@ -331,6 +331,30 @@ describe('offline-first sync', () => {
     expect(server.rows.size).toBe(3)
     expect(e.getSnapshot().status.pending).toBe(0)
   })
+
+  it('trashes a batch of notes offline, sends them later, and restores them', async () => {
+    const e = newEngine()
+    await e.start()
+    const notes = ['a', 'b', 'c'].map((title) => ({ ...emptyNote(), title }))
+    for (const n of notes) e.upsert(n, { immediate: true })
+    await settle(e)
+
+    server.mode = 'offline'
+    for (const n of notes) e.update(n.id, { trashedAt: 1234 }, { immediate: true })
+    await settle(e)
+    expect([...e.getSnapshot().notes.values()].every((n) => n.trashedAt === 1234)).toBe(true)
+    expect([...server.rows.values()].every((r) => r.trashedAt === null)).toBe(true)
+
+    server.mode = 'up'
+    await e.sync()
+    await settle(e)
+    expect([...server.rows.values()].every((r) => r.trashedAt === 1234)).toBe(true)
+    expect(e.getSnapshot().status.pending).toBe(0)
+
+    for (const n of notes) e.update(n.id, { trashedAt: null }, { immediate: true })
+    await settle(e)
+    expect([...server.rows.values()].every((r) => r.trashedAt === null)).toBe(true)
+  })
 })
 
 describe('re-importing an export', () => {

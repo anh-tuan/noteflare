@@ -7,6 +7,7 @@ All notable changes to NoteFlare are recorded here. The format follows [Keep a C
 ### Added
 
 - Attach any file to a note, not only images: a PDF, a spreadsheet, a zip. It is encrypted on your device like everything else and shows as a chip with its name and size; click it to download the file. Needs the optional attachment storage, up to 10 MB per file.
+- Select several notes, or everything in the current view, and move them to the trash in one go. They stay in the trash for 30 days, so you can restore them.
 
 ### Security
 

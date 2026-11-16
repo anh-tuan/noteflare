@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
-import { Archive, Check, Coffee, Download, FileInput, Fingerprint, FileUp, FolderUp, HardDriveDownload, Info, Keyboard, KeyRound, Languages, LayoutGrid, Lock, LogOut, Moon, Plug, Plus, RefreshCw, Rows3, Search, StickyNote, Sun, Trash2, X } from 'lucide-react'
+import { Archive, Check, Coffee, Download, FileInput, Fingerprint, FileUp, FolderUp, HardDriveDownload, Info, Keyboard, KeyRound, Languages, LayoutGrid, Lock, LogOut, Moon, Plug, Plus, RefreshCw, Rows3, Search, SquareCheckBig, StickyNote, Sun, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -58,6 +58,8 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
   const [view, setView] = useState<View>({ kind: 'notes' })
   const [query, setQuery] = useState('')
   const [editing, setEditing] = useState<Note | null>(null)
+  // Select mode: the ids picked so far; null when the board is in its normal mode.
+  const [selected, setSelected] = useState<ReadonlySet<string> | null>(null)
   // The note that just closed keeps the top layer while it settles back into the grid.
   const [focusId, setFocusId] = useState<string | null>(null)
   const [pwOpen, setPwOpen] = useState(false)
@@ -162,7 +164,10 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
   const others = view.kind === 'trash' ? visible : visible.filter((n) => !n.pinned)
   const ordered = [...pinned, ...others]
   sectionsRef.current = { pinned, others }
-  const canReorder = view.kind !== 'trash'
+  const selecting = selected !== null && view.kind !== 'trash'
+  // Only notes still shown count: a search or a sync may have removed some.
+  const picked = selecting ? ordered.filter((n) => selected.has(n.id)) : []
+  const canReorder = view.kind !== 'trash' && !selecting
   const revealIndex = (id: string) => {
     if (!revealing) return undefined
     const i = ordered.findIndex((n) => n.id === id)
@@ -179,10 +184,11 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
   // Shortcuts: "/" to search, "c" for a new note, "?" for the list of shortcuts.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selected && !editing) return setSelected(null)
       const el = e.target as HTMLElement
       if (editing || el.closest('input, textarea, [contenteditable], [role=dialog], [role=menu]')) return
       if (e.key === '/') (e.preventDefault(), searchRef.current?.focus())
-      if (e.key === 'c' && !e.metaKey && !e.ctrlKey) (e.preventDefault(), newNote())
+      if (e.key === 'c' && !selecting && !e.metaKey && !e.ctrlKey) (e.preventDefault(), newNote())
       if (e.key === '?') (e.preventDefault(), setKeysOpen(true))
     }
     window.addEventListener('keydown', onKey)
@@ -268,6 +274,31 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
     [destroy, t, store.byId, store.notes],
   )
 
+  const toggleSelected = useCallback((id: string) => {
+    setSelected((cur) => {
+      if (!cur) return cur
+      const next = new Set(cur)
+      if (!next.delete(id)) next.add(id)
+      return next
+    })
+  }, [])
+  const allPicked = selecting && picked.length === ordered.length
+  const selectAll = () => setSelected(allPicked ? new Set() : new Set(ordered.map((n) => n.id)))
+  /** Move the picked notes to the trash, after asking. One toast undoes the whole batch. */
+  const trashSelected = () => {
+    const ids = picked.map((n) => n.id)
+    if (!ids.length) return
+    if (!window.confirm(ids.length === 1 ? t('nb.trashSelectedConfirmOne') : t('nb.trashSelectedConfirm', { n: ids.length }))) return
+    const trashedAt = Date.now()
+    transition(() => {
+      for (const id of ids) update(id, { trashedAt }, { immediate: true })
+      setSelected(null)
+    })
+    toast(ids.length === 1 ? t('nb.movedToTrash') : t('nb.movedManyToTrash', { n: ids.length }), {
+      action: { label: t('common.undo'), onClick: () => transition(() => ids.forEach((id) => update(id, { trashedAt: null }, { immediate: true }))) },
+    })
+  }
+
   // Drag-and-drop reordering. A drop onto a card in the other section also pins or unpins.
   const [dragId, setDragId] = useState<string | null>(null)
   const [overId, setOverId] = useState<string | null>(null)
@@ -345,6 +376,7 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
 
   const go = (v: View) => {
     if (sameView(v, view)) return
+    setSelected(null)
     transition(() => setView(v))
     if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
   }
@@ -595,6 +627,14 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
           </p>
         )}
 
+        {!selecting && view.kind !== 'trash' && !store.loading && visible.length > 0 && (
+          <div className="mb-3 flex justify-end">
+            <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setSelected(new Set())}>
+              <SquareCheckBig /> {t('nb.select')}
+            </Button>
+          </div>
+        )}
+
         {store.loading ? (
           <Skeleton label={t('nb.decryptingNotes')} />
         ) : !visible.length ? (
@@ -604,14 +644,14 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
             {pinned.length > 0 && (
               <Section label={t('nb.pinned')} layout={layout}>
                 {pinned.map((n) => (
-                  <NoteCard key={n.id} note={n} revealIndex={revealIndex(n.id)} lifted={editing?.id === n.id} focused={focusId === n.id} onOpen={open} onChange={change} onDeleteForever={deleteForever} reorder={canReorder ? reorder : undefined} dragging={dragId === n.id} dropTarget={overId === n.id} />
+                  <NoteCard key={n.id} note={n} revealIndex={revealIndex(n.id)} lifted={editing?.id === n.id} focused={focusId === n.id} onOpen={open} onChange={change} onDeleteForever={deleteForever} reorder={canReorder ? reorder : undefined} dragging={dragId === n.id} dropTarget={overId === n.id} selecting={selecting} selected={selecting && selected.has(n.id)} onSelect={toggleSelected} />
                 ))}
               </Section>
             )}
             {others.length > 0 && (
               <Section label={pinned.length ? t('nb.others') : undefined} layout={layout}>
                 {others.map((n) => (
-                  <NoteCard key={n.id} note={n} revealIndex={revealIndex(n.id)} lifted={editing?.id === n.id} focused={focusId === n.id} onOpen={open} onChange={change} onDeleteForever={deleteForever} reorder={canReorder ? reorder : undefined} dragging={dragId === n.id} dropTarget={overId === n.id} />
+                  <NoteCard key={n.id} note={n} revealIndex={revealIndex(n.id)} lifted={editing?.id === n.id} focused={focusId === n.id} onOpen={open} onChange={change} onDeleteForever={deleteForever} reorder={canReorder ? reorder : undefined} dragging={dragId === n.id} dropTarget={overId === n.id} selecting={selecting} selected={selecting && selected.has(n.id)} onSelect={toggleSelected} />
                 ))}
               </Section>
             )}
@@ -619,7 +659,28 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
         )}
       </main>
 
-      {view.kind !== 'trash' && (
+      {selecting && (
+        <div
+          role="toolbar"
+          aria-label={t('nb.selectionBar')}
+          className="fixed inset-x-0 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-30 mx-auto flex w-fit max-w-[calc(100%-1.5rem)] items-center gap-1 rounded-2xl border bg-background/95 p-1.5 shadow-lg backdrop-blur-md animate-in fade-in-0 slide-in-from-bottom-2 duration-200"
+        >
+          <Tooltip label={t('nb.selectCancel')}>
+            <Button variant="ghost" size="icon-sm" aria-label={t('nb.selectCancel')} onClick={() => setSelected(null)}>
+              <X />
+            </Button>
+          </Tooltip>
+          <span role="status" className="px-1 text-sm tabular-nums whitespace-nowrap">{t('nb.selectedCount', { n: picked.length })}</span>
+          <Button variant="ghost" size="sm" onClick={selectAll}>
+            {allPicked ? t('nb.selectNone') : t('nb.selectAll')}
+          </Button>
+          <Button variant="outline" size="sm" disabled={!picked.length} onClick={trashSelected}>
+            <Trash2 /> {t('nb.trashSelected')}
+          </Button>
+        </div>
+      )}
+
+      {view.kind !== 'trash' && !selecting && (
         <button
           type="button"
           onClick={newNote}
