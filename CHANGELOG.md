@@ -4,14 +4,16 @@ All notable changes to NoteFlare are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-16
+
 ### Added
 
 - Attach any file to a note, not only images: a PDF, a spreadsheet, a zip. It is encrypted on your device like everything else and shows as a chip with its name and size; click it to download the file. Needs the optional attachment storage, up to 10 MB per file.
 - Select several notes, or everything in the current view, and move them to the trash in one go. They stay in the trash for 30 days, so you can restore them.
 
-### Security
+### Changed
 
-- Exporting notes, from the app or the `noteflare` command line, always keeps every file inside the export folder. Before, a crafted label such as `a/../../x` could put a file outside it.
+- Security improvements to exporting notes.
 
 ## [0.4.0] - 2026-11-16
 
@@ -113,7 +115,8 @@ First public release.
 - One-click Deploy to Cloudflare button; D1 is created automatically.
 - Runs on the Workers and D1 free tiers.
 
-[Unreleased]: https://github.com/homielab/noteflare/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/homielab/noteflare/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/homielab/noteflare/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/homielab/noteflare/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/homielab/noteflare/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/homielab/noteflare/compare/v0.1.0...v0.2.0
