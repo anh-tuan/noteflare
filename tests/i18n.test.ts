@@ -5,14 +5,14 @@ import { vi } from '../src/i18n/vi'
 import { es } from '../src/i18n/es'
 import { fr } from '../src/i18n/fr'
 import { de } from '../src/i18n/de'
-import { ptBR } from '../src/i18n/pt-BR'
+import { pt } from '../src/i18n/pt'
 
 const LOCALES: [string, Record<MessageKey, string>][] = [
   ['vi', vi],
   ['es', es],
   ['fr', fr],
   ['de', de],
-  ['pt-BR', ptBR],
+  ['pt', pt],
 ]
 
 describe('i18n locales', () => {
@@ -32,7 +32,7 @@ describe('i18n locales', () => {
 describe('detectLang', () => {
   it('maps browser language preferences to a locale', () => {
     expect(detectLang(['fr-CA'])).toBe('fr')
-    expect(detectLang(['pt-PT'])).toBe('pt-BR')
+    expect(detectLang(['pt-PT'])).toBe('pt')
     expect(detectLang(['de-DE', 'en'])).toBe('de')
     expect(detectLang(['ja-JP'])).toBe('en')
     expect(detectLang(['ja', 'es-MX'])).toBe('es')
