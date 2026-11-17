@@ -10,10 +10,13 @@ import { isCoarsePointer } from '@/lib/viewport'
 interface Props {
   value: string[]
   allLabels: string[]
-  onChange: (labels: string[]) => void
+  onChange?: (labels: string[]) => void
+  /** Called with the clicked label instead of `onChange` (for a selection that has no single value). */
+  onToggle?: (label: string) => void
+  disabled?: boolean
 }
 
-export function LabelMenu({ value, allLabels, onChange }: Props) {
+export function LabelMenu({ value, allLabels, onChange, onToggle, disabled }: Props) {
   const { t } = useI18n()
   const [query, setQuery] = useState('')
   const q = query.trim()
@@ -23,13 +26,13 @@ export function LabelMenu({ value, allLabels, onChange }: Props) {
   const canCreate = q && !options.some((l) => l.toLowerCase() === q.toLowerCase())
 
   const toggle = (label: string) =>
-    onChange(value.includes(label) ? value.filter((l) => l !== label) : [...value, label])
+    onToggle ? onToggle(label) : onChange?.(value.includes(label) ? value.filter((l) => l !== label) : [...value, label])
 
   return (
     <DropdownMenu onOpenChange={(o) => !o && setQuery('')}>
       <Tooltip label={t('act.labels')}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm" aria-label={t('act.labels')}>
+          <Button variant="ghost" size="icon-sm" aria-label={t('act.labels')} disabled={disabled}>
             <Tag />
           </Button>
         </DropdownMenuTrigger>

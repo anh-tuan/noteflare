@@ -154,6 +154,8 @@ export const fr: Record<MessageKey, string> = {
   'nb.trashSelected': 'Mettre à la corbeille',
   'nb.trashSelectedConfirm': 'Déplacer {n} notes dans la corbeille ? Vous pouvez les restaurer depuis la corbeille pendant 30 jours.',
   'nb.trashSelectedConfirmOne': 'Déplacer cette note dans la corbeille ? Vous pouvez la restaurer depuis la corbeille pendant 30 jours.',
+  'nb.labelAdded': 'Libellé « {l} » ajouté',
+  'nb.labelRemoved': 'Libellé « {l} » retiré',
   'nb.archived': 'Archivée',
   'nb.deletedForever': 'Supprimée pour de bon',
   'nb.emptySearch': 'Aucune note ne contient « {q} ».',

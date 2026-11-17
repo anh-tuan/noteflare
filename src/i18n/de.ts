@@ -154,6 +154,8 @@ export const de: Record<MessageKey, string> = {
   'nb.trashSelected': 'In den Papierkorb',
   'nb.trashSelectedConfirm': '{n} Notizen in den Papierkorb verschieben? Du kannst sie 30 Tage lang aus dem Papierkorb wiederherstellen.',
   'nb.trashSelectedConfirmOne': 'Diese Notiz in den Papierkorb verschieben? Du kannst sie 30 Tage lang aus dem Papierkorb wiederherstellen.',
+  'nb.labelAdded': 'Label „{l}“ hinzugefügt',
+  'nb.labelRemoved': 'Label „{l}“ entfernt',
   'nb.archived': 'Archiviert',
   'nb.deletedForever': 'Endgültig gelöscht',
   'nb.emptySearch': 'Keine Notiz enthält „{q}“.',

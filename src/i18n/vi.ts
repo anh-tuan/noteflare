@@ -154,6 +154,8 @@ export const vi: Record<MessageKey, string> = {
   'nb.trashSelected': 'Chuyển vào thùng rác',
   'nb.trashSelectedConfirm': 'Chuyển {n} ghi chú vào thùng rác? Bạn có thể khôi phục từ thùng rác trong 30 ngày.',
   'nb.trashSelectedConfirmOne': 'Chuyển ghi chú này vào thùng rác? Bạn có thể khôi phục từ thùng rác trong 30 ngày.',
+  'nb.labelAdded': 'Đã gắn nhãn “{l}”',
+  'nb.labelRemoved': 'Đã gỡ nhãn “{l}”',
   'nb.archived': 'Đã lưu trữ',
   'nb.deletedForever': 'Đã xoá vĩnh viễn',
   'nb.emptySearch': 'Không có ghi chú nào chứa “{q}”.',

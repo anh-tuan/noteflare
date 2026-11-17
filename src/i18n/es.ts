@@ -154,6 +154,8 @@ export const es: Record<MessageKey, string> = {
   'nb.trashSelected': 'Mover a la papelera',
   'nb.trashSelectedConfirm': '¿Mover {n} notas a la papelera? Puedes restaurarlas desde la papelera durante 30 días.',
   'nb.trashSelectedConfirmOne': '¿Mover esta nota a la papelera? Puedes restaurarla desde la papelera durante 30 días.',
+  'nb.labelAdded': 'Etiqueta “{l}” añadida',
+  'nb.labelRemoved': 'Etiqueta “{l}” quitada',
   'nb.archived': 'Archivada',
   'nb.deletedForever': 'Borrada para siempre',
   'nb.emptySearch': 'Ninguna nota contiene “{q}”.',

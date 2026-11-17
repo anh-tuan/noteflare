@@ -15,6 +15,8 @@ import { useInstallPrompt } from '@/lib/pwa'
 import { NoteCard, type ReorderHandlers } from './NoteCard'
 import { neighbourId, reorderPosition } from '@/lib/reorder'
 import { NoteEditor } from './NoteEditor'
+import { LabelMenu } from './LabelMenu'
+import { bulkLabelChanges, commonLabels, undoLabelChanges } from '@/lib/bulkLabels'
 import { ChangePassphraseDialog } from './ChangePassphraseDialog'
 import { PasskeysDialog } from './PasskeysDialog'
 import { IntegrationsDialog } from './IntegrationsDialog'
@@ -78,6 +80,7 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
   const navRef = useRef<HTMLDivElement>(null)
   /** The two lists as displayed, for drag-and-drop reordering. */
   const sectionsRef = useRef<{ pinned: Note[]; others: Note[] }>({ pinned: [], others: [] })
+  const byIdRef = useRef(store.byId)
 
   useEffect(() => {
     if (query === appliedQuery) return
@@ -164,6 +167,7 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
   const others = view.kind === 'trash' ? visible : visible.filter((n) => !n.pinned)
   const ordered = [...pinned, ...others]
   sectionsRef.current = { pinned, others }
+  byIdRef.current = store.byId
   const selecting = selected !== null && view.kind !== 'trash'
   // Only notes still shown count: a search or a sync may have removed some.
   const picked = selecting ? ordered.filter((n) => selected.has(n.id)) : []
@@ -184,8 +188,9 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
   // Shortcuts: "/" to search, "c" for a new note, "?" for the list of shortcuts.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && selected && !editing) return setSelected(null)
       const el = e.target as HTMLElement
+      // Escape in the selection bar's label menu closes the menu, not select mode.
+      if (e.key === 'Escape' && selected && !editing && !el.closest('[role=menu]')) return setSelected(null)
       if (editing || el.closest('input, textarea, [contenteditable], [role=dialog], [role=menu]')) return
       if (e.key === '/') (e.preventDefault(), searchRef.current?.focus())
       if (e.key === 'c' && !selecting && !e.metaKey && !e.ctrlKey) (e.preventDefault(), newNote())
@@ -296,6 +301,20 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
     })
     toast(ids.length === 1 ? t('nb.movedToTrash') : t('nb.movedManyToTrash', { n: ids.length }), {
       action: { label: t('common.undo'), onClick: () => transition(() => ids.forEach((id) => update(id, { trashedAt: null }, { immediate: true }))) },
+    })
+  }
+  /** Add the label to every picked note, or take it off all of them when they all have it. One toast undoes the batch. */
+  const labelSelected = (label: string) => {
+    const add = !commonLabels(picked).includes(label)
+    const changes = bulkLabelChanges(picked, label, add)
+    if (!changes.length) return
+    for (const c of changes) update(c.id, { labels: c.labels }, { immediate: true })
+    toast(t(add ? 'nb.labelAdded' : 'nb.labelRemoved', { l: label }), {
+      // Undo works on the notes as they are by then, so a label set after this batch is kept.
+      action: {
+        label: t('common.undo'),
+        onClick: () => undoLabelChanges(changes, (id) => byIdRef.current.get(id), label, add).forEach((c) => update(c.id, { labels: c.labels }, { immediate: true })),
+      },
     })
   }
 
@@ -674,6 +693,7 @@ export function Notebook({ dek }: { dek: CryptoKey }) {
           <Button variant="ghost" size="sm" onClick={selectAll}>
             {allPicked ? t('nb.selectNone') : t('nb.selectAll')}
           </Button>
+          <LabelMenu value={commonLabels(picked)} allLabels={labels} onToggle={labelSelected} disabled={!picked.length} />
           <Button variant="outline" size="sm" disabled={!picked.length} onClick={trashSelected}>
             <Trash2 /> {t('nb.trashSelected')}
           </Button>

@@ -152,6 +152,8 @@ export const en = {
   'nb.trashSelected': 'Move to trash',
   'nb.trashSelectedConfirm': 'Move {n} notes to the trash? You can restore them from the trash for 30 days.',
   'nb.trashSelectedConfirmOne': 'Move this note to the trash? You can restore it from the trash for 30 days.',
+  'nb.labelAdded': 'Label “{l}” added',
+  'nb.labelRemoved': 'Label “{l}” removed',
   'nb.archived': 'Archived',
   'nb.deletedForever': 'Deleted forever',
   'nb.emptySearch': 'No notes contain “{q}”.',

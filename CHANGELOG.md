@@ -4,6 +4,10 @@ All notable changes to NoteFlare are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+### Added
+
+- Label several notes at once: tap Select, pick your notes, then add or remove a label for all of them. One Undo puts everything back.
+
 ## [0.6.0] - 2026-11-17
 
 ### Changed
