@@ -4,6 +4,8 @@ All notable changes to NoteFlare are recorded here. The format follows [Keep a C
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-17
+
 ### Changed
 
 - Imported notes keep their original dates from Standard Notes, Evernote, Simplenote, Google Keep or Markdown files. A note shows when it was last edited there until you edit it here, and exports keep those dates.
@@ -123,7 +125,8 @@ First public release.
 - One-click Deploy to Cloudflare button; D1 is created automatically.
 - Runs on the Workers and D1 free tiers.
 
-[Unreleased]: https://github.com/homielab/noteflare/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/homielab/noteflare/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/homielab/noteflare/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/homielab/noteflare/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/homielab/noteflare/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/homielab/noteflare/compare/v0.2.0...v0.3.0
