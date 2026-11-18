@@ -43,17 +43,26 @@
     { "name": "SETUP_LIMITER", "namespace_id": "1002", "simple": { "limit": 10, "period": 60 } }
   ],
 
-  "vars": {
+  //"vars": {
     // Leave both as "todo": NoteFlare sets up Cloudflare Access itself on first open and keeps
     // the values in D1. To set them by hand instead: your team address
     // (https://your-team.cloudflareaccess.com) and the Access application's AUD tag.
-    "ACCESS_TEAM_DOMAIN": "todo",
-    "ACCESS_AUD": "todo",
+    //"ACCESS_TEAM_DOMAIN": "todo",
+    //"ACCESS_AUD": "todo",
     // Optional second lock on top of the Access policy: emails or "@domain", comma-separated.
-    "ALLOWED_EMAILS": "",
+    //"ALLOWED_EMAILS": "",
     // Where to look for new releases ("owner/repo"). Use your fork, or "off" to disable.
-    "UPDATE_CHECK_REPO": "homielab/noteflare"
+    //"UPDATE_CHECK_REPO": "homielab/noteflare"
+  //},
+
+  // ...
+  "vars": {
+    "ACCESS_AUD": "6c757ad3987fcc08d0a16e947d471be3706bfc8c6bf44cced4823bdbbe8eb43c",
+    "ACCESS_TEAM_DOMAIN": "tuann",
+    "ALLOWED_EMAILS": "mail@tuan.ng, me@tuan.ng, natuan126@gmail.com",
+    "UPDATE_CHECK_REPO": "anh-tuan/noteflare"
   },
+  // ...
 
   // Empty the trash: permanently delete notes trashed more than 30 days ago
   "triggers": { "crons": ["17 3 * * *"] },
