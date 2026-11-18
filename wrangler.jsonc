@@ -58,7 +58,7 @@
   // ...
   "vars": {
     "ACCESS_AUD": "6c757ad3987fcc08d0a16e947d471be3706bfc8c6bf44cced4823bdbbe8eb43c",
-    "ACCESS_TEAM_DOMAIN": "tuann",
+    "ACCESS_TEAM_DOMAIN": "https://tuann.cloudflareaccess.com",
     "ALLOWED_EMAILS": "mail@tuan.ng, me@tuan.ng, natuan126@gmail.com",
     "UPDATE_CHECK_REPO": "anh-tuan/noteflare"
   },
